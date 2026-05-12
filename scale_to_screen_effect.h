@@ -25,11 +25,13 @@ private:
 
     // InputEventFilter Interface
     bool pointerMotion(PointerMotionEvent *event) override;
+    bool pointerButton(PointerButtonEvent *event) override;
+    bool pointerAxis(KWin::PointerAxisEvent *event) override;
 
 
 private slots:
     // Scales / unscales the active window
-    void toggle();
+    void toggleActiveWindow();
 
     void onWindowAdded(EffectWindow *w);
     void onWindowDeleted(EffectWindow *w);

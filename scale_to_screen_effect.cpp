@@ -113,13 +113,34 @@ bool ScaleToScreenEffect::hasEnabledScalers() const
 bool ScaleToScreenEffect::pointerMotion(PointerMotionEvent *event)
 {
     syncWindowToCursor(event->position);
-
     return false;
 }
 
-void ScaleToScreenEffect::toggle()
+bool ScaleToScreenEffect::pointerButton(PointerButtonEvent *event)
 {
+    syncWindowToCursor(event->position);
+    return false;
+}
 
+bool ScaleToScreenEffect::pointerAxis(KWin::PointerAxisEvent *event)
+{
+    syncWindowToCursor(event->position);
+    return false;
+}
+
+void ScaleToScreenEffect::toggleActiveWindow()
+{
+    EffectWindow *active = effects->activeWindow();
+    if (!active) {
+        return;
+    }
+
+    if (!m_scaledWindows.contains(active)) {
+        setEnabled(active, true);
+        return;
+    }
+
+    setEnabled(active, !m_scaledWindows.at(active).state.isEnabled);
 }
 
 void ScaleToScreenEffect::onWindowAdded(EffectWindow *w)
