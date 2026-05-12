@@ -2,8 +2,11 @@
 
 #include "effect/effect.h"
 #include "input.h"
+#include <QLoggingCategory>
 
 namespace KWin {
+
+Q_DECLARE_LOGGING_CATEGORY(lcScaleToScreen)
 
 class ScaleToScreenEffect : public Effect, public InputEventFilter
 {
@@ -15,11 +18,16 @@ public:
 private:
     void setEnabled(EffectWindow *w, bool enabled);
 
+    QRectF calculateTargetRect(QRectF screenGeometry, QRectF windowGeometry,
+                               QMargins windowMargins, Qt::AspectRatioMode aspectRatio) const;
+    void updateTargetRect(EffectWindow *w);
+
     // Maps the window position to the targetRect so that
     // the window overlaps at the cursor position in the targetRect
     QPointF mapWindowToCursor(EffectWindow *w, QPointF cursorPosition) const;
-    void syncWindowToCursor(QPointF cursorPosition) const;
+    bool syncWindowToCursor(QPointF cursorPosition) const;
     EffectWindow *findWindowAtCursor(QPointF cursorPosition) const;
+    bool shouldBlockInput(QPointF cursorPosition) const;
 
     bool hasEnabledScalers() const;
 
@@ -46,6 +54,7 @@ private:
         Shader shader{Shader::Simple};
         Qt::AspectRatioMode aspectRatio{Qt::KeepAspectRatio};
         QMargins margins{};
+        bool blockScreenInput;
     };
 
     struct State {
