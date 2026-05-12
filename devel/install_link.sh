@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+readonly SCRIPT_DIR=$(cd "$(dirname "${0}")" && pwd)
+readonly SONAME=ScaleToScreen.so
+readonly INSTALL_DIR='/usr/lib/x86_64-linux-gnu/qt6/plugins/kwin/effects/plugins/'
+
+
+sudo ln -sf "${SCRIPT_DIR}/build/${SONAME}" "${INSTALL_DIR}"
+ls -l "${INSTALL_DIR}"

@@ -1,0 +1,13 @@
+{
+    "KPlugin": {
+        "Name": "Scale to Screen",
+        "Description": "Scale windows to fit the screen",
+        "Version": "0.1",
+        "License": "GPL",
+        "EnabledByDefault": false,
+        "Category": "Focus",
+        "Authors": [
+            { "Name": "Moritz Molch" }
+        ]
+    }
+}
