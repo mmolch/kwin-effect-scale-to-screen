@@ -51,6 +51,7 @@ private:
     struct State {
         bool isEnabled{false};
         QRectF targetRect{100, 100, 400, 300}; // Testing
+        QPointF originalPosition; // To restore the window position prior to scaling
     };
 
     struct ScaleData {

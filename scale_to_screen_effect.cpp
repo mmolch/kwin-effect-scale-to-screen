@@ -25,9 +25,22 @@ void ScaleToScreenEffect::setEnabled(EffectWindow *w, bool enabled)
     }
 
     if (m_scaledWindows.contains(w)) {
-        m_scaledWindows.at(w).state.isEnabled = enabled;
+        auto &state = m_scaledWindows.at(w).state;
+        state.isEnabled = enabled;
+        if (enabled) {
+            state.originalPosition = w->pos();
+        } else {
+            w->window()->moveResize(RectF{
+                state.originalPosition.x(),
+                state.originalPosition.y(),
+                w->width(),
+                w->height()
+            });
+        }
+        
     } else {
-        m_scaledWindows.insert({w, ScaleData{.state{.isEnabled{true}}}});
+        m_scaledWindows.insert({w, ScaleData{.state{.isEnabled{true},
+                                                    .originalPosition{w->pos()}}}});
     }
 
     if (hasEnabledScalers()) {
