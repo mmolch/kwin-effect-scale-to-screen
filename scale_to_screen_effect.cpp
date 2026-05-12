@@ -58,6 +58,7 @@ void ScaleToScreenEffect::setEnabled(EffectWindow *w, bool enabled)
 
     if (enabled) {
         updateTargetRect(w);
+        syncWindowToCursor(input()->globalPointer());
     }
 
     if (hasEnabledScalers()) {

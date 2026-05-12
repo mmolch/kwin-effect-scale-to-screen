@@ -52,14 +52,16 @@ private:
 
     struct Settings {
         Shader shader{Shader::Simple};
-        Qt::AspectRatioMode aspectRatio{Qt::KeepAspectRatio};
+        //IgnoreAspectRatio, KeepAspectRatio, KeepAspectRatioByExpanding
+        Qt::AspectRatioMode aspectRatio{Qt::IgnoreAspectRatio};
         QMargins margins{};
         bool blockScreenInput;
+        bool confinePointer;
     };
 
     struct State {
         bool isEnabled{false};
-        QRectF targetRect{100, 100, 400, 300}; // Testing
+        QRectF targetRect;
         QPointF originalPosition; // To restore the window position prior to scaling
     };
 
