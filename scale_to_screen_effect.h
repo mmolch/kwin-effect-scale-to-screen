@@ -55,14 +55,17 @@ private:
         //IgnoreAspectRatio, KeepAspectRatio, KeepAspectRatioByExpanding
         Qt::AspectRatioMode aspectRatio{Qt::IgnoreAspectRatio};
         QMargins margins{};
-        bool blockScreenInput;
-        bool confinePointer;
+        bool blockScreenInput{false};
+        bool confinePointer{false};
+        bool noBorder{true};
     };
 
     struct State {
         bool isEnabled{false};
         QRectF targetRect;
         QPointF originalPosition; // To restore the window position prior to scaling
+        bool originalNoBorder;
+        bool originalKeepAbove;
     };
 
     struct ScaleData {

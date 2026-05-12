@@ -37,28 +37,34 @@ void ScaleToScreenEffect::setEnabled(EffectWindow *w, bool enabled)
         return;
     }
 
-    if (m_scaledWindows.contains(w)) {
-        auto &state = m_scaledWindows.at(w).state;
-        state.isEnabled = enabled;
-        if (enabled) {
-            state.originalPosition = w->pos();
-        } else {
-            w->window()->moveResize(RectF{
-                state.originalPosition.x(),
-                state.originalPosition.y(),
-                w->width(),
-                w->height()
-            });
-        }
-        
-    } else {
-        m_scaledWindows.insert({w, ScaleData{.state{.isEnabled{true},
-                                                    .originalPosition{w->pos()}}}});
+    const bool containsWindow = m_scaledWindows.contains(w);
+
+    if (!enabled && !containsWindow) {
+        // Trying to disable a scaler that doesn't exist
+        return;
     }
 
+    if (enabled && !containsWindow) {
+        m_scaledWindows.insert({w, ScaleData{}});
+    }
+
+    auto &data = m_scaledWindows.at(w);
+
+    data.state.isEnabled = enabled;
     if (enabled) {
+        data.state.originalPosition = w->pos();
+        data.state.originalNoBorder = w->window()->noBorder();
+        data.state.originalKeepAbove = w->window()->keepAbove();
+        w->window()->setNoBorder(data.settings.noBorder);
+        w->window()->setKeepAbove(true);
         updateTargetRect(w);
         syncWindowToCursor(input()->globalPointer());
+
+    } else {
+        w->window()->setKeepAbove(data.state.originalKeepAbove);
+        w->window()->setNoBorder(data.state.originalNoBorder);
+        w->window()->moveResize(RectF{data.state.originalPosition.x(), data.state.originalPosition.y(),
+                                      w->width(),w->height()});
     }
 
     if (hasEnabledScalers()) {
