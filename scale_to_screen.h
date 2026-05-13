@@ -46,6 +46,8 @@ private:
 
     void constrainPointer(QPointF pos);
 
+    void saveBufferToDisk();
+
 
 private slots:
     // Scales / unscales the active window
@@ -68,8 +70,6 @@ private:
         //IgnoreAspectRatio, KeepAspectRatio, KeepAspectRatioByExpanding
         Qt::AspectRatioMode aspectRatio{Qt::KeepAspectRatio};
         QMargins margins{};
-        bool blockScreenInput{false};
-        bool confinePointer{false};
         bool noBorder{true};
     };
 

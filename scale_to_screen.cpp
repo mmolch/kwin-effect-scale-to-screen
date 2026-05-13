@@ -197,10 +197,14 @@ QPointF ScaleToScreenEffect::mapWindowToCursor(QPointF cursorPosition) const
 
 bool ScaleToScreenEffect::syncWindowToCursor(QPointF cursorPosition) const
 {
+    // 1-pixel-off jitter correction test 1: Didn't work
+    // Idea: snap to whole pixels at 1.25 (or other) scale display
+    const qreal scale = 1.0;
+
     QPointF newPosition = mapWindowToCursor(cursorPosition);
     m_state.window->window()->moveResize(RectF{
-        newPosition.x(),
-        newPosition.y(),
+        std::round(newPosition.x() * scale) / scale,
+        std::round(newPosition.y() * scale) / scale,
         m_state.window->width(),
         m_state.window->height()
     });
@@ -239,7 +243,7 @@ void ScaleToScreenEffect::paintScreen(const RenderTarget &renderTarget, const Re
     const QMarginsF margins = m_settings.margins;
     
     const QRectF visualRect = winGeo.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
-    const QSize pixelSize = (visualRect.size()).toSize();
+    const QSize pixelSize = (visualRect.size() * scale).toSize();
 
     if (!m_buffer) {
         createBuffer(pixelSize, *renderTarget.colorDescription());
@@ -255,6 +259,8 @@ void ScaleToScreenEffect::paintScreen(const RenderTarget &renderTarget, const Re
     effects->paintScreen(offscreenTarget, offscreenViewport, mask, region, screen);
     
     GLFramebuffer::popFramebuffer();
+
+    //saveBufferToDisk();
 
     //Clear the screen to black (pillarboxing)
     glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -410,6 +416,40 @@ void ScaleToScreenEffect::freeBuffer()
     if (m_buffer) {
         effects->makeOpenGLContextCurrent();
         m_buffer.reset();
+    }
+}
+
+void ScaleToScreenEffect::saveBufferToDisk()
+{
+    if (!m_buffer || !m_buffer->texture) {
+        return;
+    }
+
+    const QSize size = m_buffer->texture->size();
+    
+    // 1. Prepare a QImage to hold the data
+    // Use ARGB32_Premultiplied for standard GL_RGBA8 textures
+    QImage img(size, QImage::Format_ARGB32_Premultiplied);
+
+    // 2. Bind the framebuffer to read from it
+    GLFramebuffer::pushFramebuffer(m_buffer->framebuffer.get());
+
+    // 3. Read pixels from the GPU to the QImage's internal buffer
+    glReadPixels(0, 0, size.width(), size.height(), GL_BGRA, GL_UNSIGNED_BYTE, img.bits());
+
+    GLFramebuffer::popFramebuffer();
+
+    // 4. OpenGL coordinates are bottom-to-top, QImage is top-to-bottom
+    img = img.mirrored(false, true);
+
+    // 5. Save to a unique path
+    QString path = QStringLiteral("/tmp/kwin_dump_%1.png")
+                   .arg(QDateTime::currentMSecsSinceEpoch());
+    
+    if (img.save(path, "PNG")) {
+        qCDebug(lcScaleToScreen) << "Saved texture to:" << path;
+    } else {
+        qCWarning(lcScaleToScreen) << "Failed to save texture to:" << path;
     }
 }
 
