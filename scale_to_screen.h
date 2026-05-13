@@ -44,6 +44,8 @@ private:
     bool pointerButton(PointerButtonEvent *event) override;
     bool pointerAxis(KWin::PointerAxisEvent *event) override;
 
+    void constrainPointer(QPointF pos);
+
 
 private slots:
     // Scales / unscales the active window

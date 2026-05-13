@@ -307,23 +307,39 @@ void ScaleToScreenEffect::paintWindow(const RenderTarget &renderTarget, const Re
 
 bool ScaleToScreenEffect::pointerMotion(PointerMotionEvent *event)
 {
-    bool blockEvent = shouldBlockInput(event->position);
-    syncWindowToCursor(event->position);
+    const QPointF &pos = event->position;
+    constrainPointer(pos);
+    bool blockEvent = shouldBlockInput(pos);
+    syncWindowToCursor(pos);
     return blockEvent;
 }
 
 bool ScaleToScreenEffect::pointerButton(PointerButtonEvent *event)
 {
-    bool blockEvent = shouldBlockInput(event->position);
-    syncWindowToCursor(event->position);
+    const QPointF &pos = event->position;
+    constrainPointer(pos);
+    bool blockEvent = shouldBlockInput(pos);
+    syncWindowToCursor(pos);
     return blockEvent;
 }
 
 bool ScaleToScreenEffect::pointerAxis(KWin::PointerAxisEvent *event)
 {
-    bool blockEvent = shouldBlockInput(event->position);
-    syncWindowToCursor(event->position);
+    const QPointF &pos = event->position;
+    constrainPointer(pos);
+    bool blockEvent = shouldBlockInput(pos);
+    syncWindowToCursor(pos);
     return blockEvent;
+}
+
+void ScaleToScreenEffect::constrainPointer(QPointF pos)
+{
+    QRectF constraintRect = m_state.window->frameGeometry();
+    if (!constraintRect.contains(pos)) {
+        pos.setX(qMax(constraintRect.left(), qMin(pos.x(), constraintRect.right())));
+        pos.setY(qMax(constraintRect.top(), qMin(pos.y(), constraintRect.bottom())));
+        input()->warpPointer(pos);
+    }
 }
 
 void ScaleToScreenEffect::toggleEffect()
