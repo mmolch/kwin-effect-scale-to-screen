@@ -239,14 +239,14 @@ void ScaleToScreenEffect::paintScreen(const RenderTarget &renderTarget, const Re
     const QMarginsF margins = m_settings.margins;
     
     const QRectF visualRect = winGeo.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
-    const QSize pixelSize = (visualRect.size() * scale).toSize();
+    const QSize pixelSize = (visualRect.size()).toSize();
 
     if (!m_buffer) {
         createBuffer(pixelSize, *renderTarget.colorDescription());
     }
 
     RenderTarget offscreenTarget(m_buffer->framebuffer.get(), renderTarget.colorDescription());
-    RenderViewport offscreenViewport(visualRect, scale, offscreenTarget, QPoint(0,0));
+    RenderViewport offscreenViewport(visualRect, 1.0, offscreenTarget, QPoint(0,0));
 
     GLFramebuffer::pushFramebuffer(m_buffer->framebuffer.get());
     glClearColor(0.0, 0.0, 0.0, 0.0);
