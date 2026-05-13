@@ -22,57 +22,85 @@ ScaleToScreenEffect::ScaleToScreenEffect()
     a->setText(i18n("Scale the active window to fullscreen"));
     KGlobalAccel::self()->setShortcut(a, {Qt::CTRL | Qt::ALT | Qt::SHIFT | Qt::Key_A});
 
-    connect(a, &QAction::triggered, this, &ScaleToScreenEffect::toggleActiveWindow);
+    connect(a, &QAction::triggered, this, &ScaleToScreenEffect::toggleEffect);
     connect(effects, &EffectsHandler::windowAdded, this, &ScaleToScreenEffect::onWindowAdded);
     connect(effects, &EffectsHandler::windowDeleted, this, &ScaleToScreenEffect::onWindowDeleted);
+    connect(effects, &EffectsHandler::windowActivated, this, &ScaleToScreenEffect::onWindowActivated);
 }
 
 ScaleToScreenEffect::~ScaleToScreenEffect()
 {
 }
 
-void ScaleToScreenEffect::setEnabled(EffectWindow *w, bool enabled)
+
+void ScaleToScreenEffect::updateScalingState()
 {
-    if (!w) {
+    const bool scale = shouldScale();
+    if (m_state.isScaling == scale) {
         return;
     }
 
-    const bool containsWindow = m_scaledWindows.contains(w);
+    m_state.isScaling = scale;
 
-    if (!enabled && !containsWindow) {
-        // Trying to disable a scaler that doesn't exist
+    if (scale) {
+        startScaling();
+    } else {
+        stopScaling();
+    }
+}
+
+void ScaleToScreenEffect::startScaling()
+{
+    m_state.originalPosition = m_state.window->pos();
+    m_state.originalNoBorder = m_state.window->window()->noBorder();
+    m_state.originalKeepAbove = m_state.window->window()->keepAbove();
+    m_state.window->window()->setNoBorder(m_settings.noBorder);
+    m_state.window->window()->setKeepAbove(true);
+    m_state.isScaling = true;
+    m_state.window = m_state.window;
+    updateTargetRect();
+    syncWindowToCursor(input()->globalPointer());
+
+    qCDebug(lcScaleToScreen) << "installInputEventFilter";
+    input()->installInputEventFilter(this);
+}
+
+void ScaleToScreenEffect::stopScaling()
+{
+    qCDebug(lcScaleToScreen) << "uninstallInputEventFilter";
+    input()->uninstallInputEventFilter(this);
+
+    m_state.isScaling = false;
+    m_state.window->window()->setKeepAbove(m_state.originalKeepAbove);
+    m_state.window->window()->setNoBorder(m_state.originalNoBorder);
+    m_state.window->window()->moveResize(RectF{m_state.originalPosition.x(), m_state.originalPosition.y(),
+                                            m_state.window->width(),m_state.window->height()});
+}
+
+bool ScaleToScreenEffect::shouldScale() const
+{
+    if (m_state.window) {
+        const EffectWindow *active = effects->activeWindow();
+        if (active == m_state.window) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void ScaleToScreenEffect::scaleActiveWindow()
+{
+    EffectWindow *active = effects->activeWindow();
+    if (!active) {
         return;
     }
 
-    if (enabled && !containsWindow) {
-        m_scaledWindows.insert({w, ScaleData{}});
-    }
-
-    auto &data = m_scaledWindows.at(w);
-
-    data.state.isEnabled = enabled;
-    if (enabled) {
-        data.state.originalPosition = w->pos();
-        data.state.originalNoBorder = w->window()->noBorder();
-        data.state.originalKeepAbove = w->window()->keepAbove();
-        w->window()->setNoBorder(data.settings.noBorder);
-        w->window()->setKeepAbove(true);
-        updateTargetRect(w);
-        syncWindowToCursor(input()->globalPointer());
-
-    } else {
-        w->window()->setKeepAbove(data.state.originalKeepAbove);
-        w->window()->setNoBorder(data.state.originalNoBorder);
-        w->window()->moveResize(RectF{data.state.originalPosition.x(), data.state.originalPosition.y(),
-                                      w->width(),w->height()});
-    }
-
-    if (hasEnabledScalers()) {
-        qCDebug(lcScaleToScreen) << "installInputEventFilter";
-        input()->installInputEventFilter(this);
-    } else {
-        qCDebug(lcScaleToScreen) << "uninstallInputEventFilter";
-        input()->uninstallInputEventFilter(this);
+    if (m_state.window != active) {
+        if (m_state.isScaling) {
+            stopScaling();
+        }
+        m_state.window = active;
+        startScaling();
     }
 }
 
@@ -108,33 +136,26 @@ QRectF ScaleToScreenEffect::calculateTargetRect(QRectF screenGeometry, QRectF wi
     return targetRect;
 }
 
-void ScaleToScreenEffect::updateTargetRect(EffectWindow *w)
+void ScaleToScreenEffect::updateTargetRect()
 {
-    if (!w || !m_scaledWindows.contains(w)) {
+    if (!m_state.window) {
         return;
     }
 
-    ScaleData &data = m_scaledWindows.at(w);
-
-    const QRectF screenGeometry = effects->clientArea(FullScreenArea, w);
-    const QRectF windowGeometry = w->frameGeometry();
-    data.state.targetRect = calculateTargetRect(screenGeometry, windowGeometry, data.settings.margins, data.settings.aspectRatio);
-    qCDebug(lcScaleToScreen) << "new targetRect" << data.state.targetRect;
+    const QRectF screenGeometry = effects->clientArea(FullScreenArea, m_state.window);
+    const QRectF windowGeometry = m_state.window->frameGeometry();
+    m_state.targetRect = calculateTargetRect(screenGeometry, windowGeometry, m_settings.margins, m_settings.aspectRatio);
+    qCDebug(lcScaleToScreen) << "new targetRect" << m_state.targetRect;
 }
 
-QPointF ScaleToScreenEffect::mapWindowToCursor(EffectWindow *w, QPointF cursorPosition) const
+QPointF ScaleToScreenEffect::mapWindowToCursor(QPointF cursorPosition) const
 {
-    if (!m_scaledWindows.contains(w)) {
-        return w->pos();
-    }
-
-    const auto &data = m_scaledWindows.at(w);
-    const QRectF target = data.state.targetRect;
-    const QMarginsF margins = data.settings.margins;
+    const QRectF target = m_state.targetRect;
+    const QMarginsF margins = m_settings.margins;
 
     // Calculate window's visual (cropped) dimensions
-    qreal visualWidth = w->width() - margins.left() - margins.right();
-    qreal visualHeight = w->height() - margins.top() - margins.bottom();
+    qreal visualWidth = m_state.window->width() - margins.left() - margins.right();
+    qreal visualHeight = m_state.window->height() - margins.top() - margins.bottom();
 
     // Normalize cursor position relative to targetRect (0.0 to 1.0)
     // We clamp to ensure the window doesn't fly off if the cursor leaves the rect
@@ -160,65 +181,58 @@ QPointF ScaleToScreenEffect::mapWindowToCursor(EffectWindow *w, QPointF cursorPo
 
 bool ScaleToScreenEffect::syncWindowToCursor(QPointF cursorPosition) const
 {
-    EffectWindow *w = findWindowAtCursor(cursorPosition);
-    if (!w || !m_scaledWindows.at(w).state.isEnabled) {
-        return false;
-    }
-
-    QPointF newPosition = mapWindowToCursor(w, cursorPosition);
-    w->window()->moveResize(RectF{
+    QPointF newPosition = mapWindowToCursor(cursorPosition);
+    m_state.window->window()->moveResize(RectF{
         newPosition.x(),
         newPosition.y(),
-        w->width(),
-        w->height()
+        m_state.window->width(),
+        m_state.window->height()
     });
 
     return true;
 }
 
-EffectWindow *ScaleToScreenEffect::findWindowAtCursor(QPointF cursorPosition) const
-{
-    for (auto &[win, scaleData] : m_scaledWindows) {
-        if (scaleData.state.targetRect.contains(cursorPosition)) {
-            return win;
-        }
-    }
-
-    return nullptr;
-}
-
 bool ScaleToScreenEffect::shouldBlockInput(QPointF pos) const
 {
-    EffectWindow *w = findWindowAtCursor(pos);
-
-    // If the window isn't being managed by our effect or isn't enabled,
-    // we return false so the event passes through to the system normally.
-    if (!w || !m_scaledWindows.contains(w) || !m_scaledWindows.at(w).state.isEnabled) {
-        return false;
-    }
-
-    // If the window IS enabled by us, we only allow (return false) 
-    // if the cursor is within the actual frame.
-    bool isInside = w->frameGeometry().contains(pos.toPoint());
+    const bool cursorIsOutsideTargetRect = !m_state.targetRect.contains(pos);
+    const bool windowContainsCursor = m_state.window->frameGeometry().contains(pos.toPoint());
     
-    return !isInside; 
+    return cursorIsOutsideTargetRect || !windowContainsCursor; 
 }
 
-bool ScaleToScreenEffect::hasEnabledScalers() const
+void ScaleToScreenEffect::prePaintScreen(ScreenPrePaintData &data, std::chrono::milliseconds presentTime)
 {
-    for (auto &[win, scaleData] : m_scaledWindows) {
-        if (scaleData.state.isEnabled) {
-            return true;
-        }
+    if (!m_state.isScaling) {
+        effects->prePaintScreen(data, presentTime);
+        return;
     }
-    return false;
+
+    effects->prePaintScreen(data, presentTime);
+}
+
+void ScaleToScreenEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport,
+                                      int mask, const Region &region, LogicalOutput *screen)
+{
+    if (!m_state.isScaling) {
+        effects->paintScreen(renderTarget, viewport, mask, region, screen);
+        return;
+    }
+
+    effects->paintScreen(renderTarget, viewport, mask, region, screen);
+}
+
+void ScaleToScreenEffect::postPaintScreen()
+{
+    if (!m_state.isScaling) {
+        effects->postPaintScreen();
+        return;
+    }
+
+    effects->postPaintScreen();
 }
 
 bool ScaleToScreenEffect::pointerMotion(PointerMotionEvent *event)
 {
-    if (!hasEnabledScalers()) {
-        return false;
-    }
     bool blockEvent = shouldBlockInput(event->position);
     syncWindowToCursor(event->position);
     return blockEvent;
@@ -226,9 +240,6 @@ bool ScaleToScreenEffect::pointerMotion(PointerMotionEvent *event)
 
 bool ScaleToScreenEffect::pointerButton(PointerButtonEvent *event)
 {
-    if (!hasEnabledScalers()) {
-        return false;
-    }
     bool blockEvent = shouldBlockInput(event->position);
     syncWindowToCursor(event->position);
     return blockEvent;
@@ -236,36 +247,43 @@ bool ScaleToScreenEffect::pointerButton(PointerButtonEvent *event)
 
 bool ScaleToScreenEffect::pointerAxis(KWin::PointerAxisEvent *event)
 {
-    if (!hasEnabledScalers()) {
-        return false;
-    }
     bool blockEvent = shouldBlockInput(event->position);
     syncWindowToCursor(event->position);
     return blockEvent;
 }
 
-void ScaleToScreenEffect::toggleActiveWindow()
+void ScaleToScreenEffect::toggleEffect()
 {
-    EffectWindow *active = effects->activeWindow();
-    if (!active) {
-        return;
+    if (m_state.isScaling) {
+        stopScaling();
+        m_state.window = nullptr;
+    } else {
+        scaleActiveWindow();
     }
-
-    if (!m_scaledWindows.contains(active)) {
-        setEnabled(active, true);
-        return;
-    }
-
-    setEnabled(active, !m_scaledWindows.at(active).state.isEnabled);
 }
 
-void ScaleToScreenEffect::onWindowAdded(EffectWindow *w)
+void ScaleToScreenEffect::onWindowAdded(EffectWindow *)
 {}
 
 void ScaleToScreenEffect::onWindowDeleted(EffectWindow *w)
 {
-    setEnabled(w, false);
-    m_scaledWindows.erase(w);
+    if (w && m_state.window == w) {
+        if (m_state.isScaling) {
+            stopScaling();
+            m_state.window = nullptr;
+        }
+    }
+}
+
+void ScaleToScreenEffect::onWindowActivated(KWin::EffectWindow *w)
+{
+    qCDebug(lcScaleToScreen) << "onWindowActivated" << w;
+    if (m_state.window) {
+        if (m_state.isScaling) {
+            stopScaling();
+            m_state.window = nullptr;
+        }
+    }
 }
 
 } // namespace KWin

@@ -16,20 +16,26 @@ public:
     ~ScaleToScreenEffect() override;
 
 private:
-    void setEnabled(EffectWindow *w, bool enabled);
+    void updateScalingState();
+    void startScaling();
+    void stopScaling();
+    bool shouldScale() const;
+    void scaleActiveWindow();
 
     QRectF calculateTargetRect(QRectF screenGeometry, QRectF windowGeometry,
                                QMargins windowMargins, Qt::AspectRatioMode aspectRatio) const;
-    void updateTargetRect(EffectWindow *w);
+    void updateTargetRect();
 
     // Maps the window position to the targetRect so that
     // the window overlaps at the cursor position in the targetRect
-    QPointF mapWindowToCursor(EffectWindow *w, QPointF cursorPosition) const;
+    QPointF mapWindowToCursor(QPointF cursorPosition) const;
     bool syncWindowToCursor(QPointF cursorPosition) const;
-    EffectWindow *findWindowAtCursor(QPointF cursorPosition) const;
     bool shouldBlockInput(QPointF cursorPosition) const;
 
-    bool hasEnabledScalers() const;
+    // Effect Interface
+    void prePaintScreen(ScreenPrePaintData &data, std::chrono::milliseconds presentTime) override;
+    void paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, int mask, const Region &region, LogicalOutput *screen) override;
+    void postPaintScreen() override;
 
     // InputEventFilter Interface
     bool pointerMotion(PointerMotionEvent *event) override;
@@ -39,10 +45,11 @@ private:
 
 private slots:
     // Scales / unscales the active window
-    void toggleActiveWindow();
+    void toggleEffect();
 
     void onWindowAdded(EffectWindow *w);
     void onWindowDeleted(EffectWindow *w);
+    void onWindowActivated(KWin::EffectWindow *w);
 
 private:
     enum class Shader: int {
@@ -61,19 +68,16 @@ private:
     };
 
     struct State {
-        bool isEnabled{false};
-        QRectF targetRect;
-        QPointF originalPosition; // To restore the window position prior to scaling
-        bool originalNoBorder;
-        bool originalKeepAbove;
+        EffectWindow *window{nullptr};
+        bool isScaling{false};
+        QRectF targetRect{};
+        QPointF originalPosition{};
+        bool originalNoBorder{false};
+        bool originalKeepAbove{false};
     };
 
-    struct ScaleData {
-        Settings settings{};
-        State state{};
-    };
-
-    std::unordered_map<EffectWindow *, ScaleData> m_scaledWindows;
+    Settings m_settings;
+    State m_state;
 };
 
 } // namespace KWin
