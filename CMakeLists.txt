@@ -26,8 +26,8 @@ find_package(KWin 6.0 REQUIRED NO_MODULE)
 
 add_library(${PROJECT_NAME} MODULE
     main.cpp
-    scale_to_screen_effect.h
-    scale_to_screen_effect.cpp
+    scale_to_screen.h
+    scale_to_screen.cpp
     scale_to_screen.qrc
 )
 

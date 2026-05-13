@@ -1,4 +1,4 @@
-#include "scale_to_screen_effect.h"
+#include "scale_to_screen.h"
 #include <effect/effecthandler.h>
 #include <effect/effectwindow.h>
 #include <input_event.h>
@@ -10,7 +10,13 @@
 #include "opengl/glframebuffer.h"
 #include "core/rendertarget.h"
 #include "core/renderviewport.h"
+#include <QDirIterator>
 
+static void ensureResources()
+{
+    // Must initialize resources manually because the effect is a static lib.
+    Q_INIT_RESOURCE(scale_to_screen);
+}
 
 namespace KWin {
 
@@ -20,6 +26,11 @@ ScaleToScreenEffect::ScaleToScreenEffect()
     : Effect()
     , InputEventFilter(InputFilterOrder::Effects)
 {
+    ensureResources();
+    QDirIterator it(":", QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        qDebug() << it.next();
+    }
 
     QAction *a = new QAction(this);
     a->setObjectName(QStringLiteral("scaleToScreen")); 
@@ -35,7 +46,6 @@ ScaleToScreenEffect::ScaleToScreenEffect()
 ScaleToScreenEffect::~ScaleToScreenEffect()
 {
 }
-
 
 void ScaleToScreenEffect::updateScalingState()
 {
@@ -250,7 +260,7 @@ void ScaleToScreenEffect::paintScreen(const RenderTarget &renderTarget, const Re
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    GLShader *shader = ShaderManager::instance()->shader(ShaderTrait::MapTexture | ShaderTrait::TransformColorspace);
+    GLShader *shader = getShader(m_settings.shader);
     ShaderManager::instance()->pushShader(shader);
 
     const QRectF targetGeo = m_state.targetRect;
@@ -348,6 +358,23 @@ void ScaleToScreenEffect::onWindowActivated(KWin::EffectWindow *w)
             m_state.window = nullptr;
         }
     }
+}
+
+GLShader *ScaleToScreenEffect::getShader(Shader shader)
+{
+    if (shader == Shader::Builtin) {
+        return ShaderManager::instance()->shader(ShaderTrait::MapTexture | ShaderTrait::TransformColorspace);
+    }
+
+    if (!m_state.shaders.contains(shader)) {
+        switch (shader)
+        {
+        default:
+            return getShader(Shader::Builtin);
+        }
+        
+    }
+    return m_state.shaders.at(shader).get();
 }
 
 void ScaleToScreenEffect::createBuffer(const QSize &size, const ColorDescription &color)

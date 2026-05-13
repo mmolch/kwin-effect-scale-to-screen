@@ -55,12 +55,14 @@ private slots:
 
 private:
     enum class Shader: int {
-        Simple = 0
+        Builtin = 0
     };
     Q_ENUM(Shader)
 
+    GLShader *getShader(Shader);
+
     struct Settings {
-        Shader shader{Shader::Simple};
+        Shader shader{Shader::Builtin};
         //IgnoreAspectRatio, KeepAspectRatio, KeepAspectRatioByExpanding
         Qt::AspectRatioMode aspectRatio{Qt::KeepAspectRatio};
         QMargins margins{};
@@ -76,6 +78,7 @@ private:
         QPointF originalPosition{};
         bool originalNoBorder{false};
         bool originalKeepAbove{false};
+        std::map<Shader, std::unique_ptr<KWin::GLShader>> shaders;
     };
 
     Settings m_settings;

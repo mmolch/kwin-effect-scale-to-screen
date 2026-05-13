@@ -1,4 +1,4 @@
-#include "scale_to_screen_effect.h"
+#include "scale_to_screen.h"
 
 namespace KWin
 {
