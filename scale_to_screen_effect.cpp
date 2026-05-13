@@ -6,6 +6,10 @@
 #include <KGlobalAccel>
 #include <KLocalizedString>
 #include <QAction>
+#include "opengl/glutils.h"
+#include "opengl/glframebuffer.h"
+#include "core/rendertarget.h"
+#include "core/renderviewport.h"
 
 
 namespace KWin {
@@ -57,12 +61,12 @@ void ScaleToScreenEffect::startScaling()
     m_state.window->window()->setNoBorder(m_settings.noBorder);
     m_state.window->window()->setKeepAbove(true);
     m_state.isScaling = true;
-    m_state.window = m_state.window;
     updateTargetRect();
     syncWindowToCursor(input()->globalPointer());
 
     qCDebug(lcScaleToScreen) << "installInputEventFilter";
     input()->installInputEventFilter(this);
+    effects->addRepaintFull();
 }
 
 void ScaleToScreenEffect::stopScaling()
@@ -71,10 +75,12 @@ void ScaleToScreenEffect::stopScaling()
     input()->uninstallInputEventFilter(this);
 
     m_state.isScaling = false;
+    freeBuffer();
     m_state.window->window()->setKeepAbove(m_state.originalKeepAbove);
     m_state.window->window()->setNoBorder(m_state.originalNoBorder);
     m_state.window->window()->moveResize(RectF{m_state.originalPosition.x(), m_state.originalPosition.y(),
                                             m_state.window->width(),m_state.window->height()});
+    effects->addRepaintFull();
 }
 
 bool ScaleToScreenEffect::shouldScale() const
@@ -202,15 +208,15 @@ bool ScaleToScreenEffect::shouldBlockInput(QPointF pos) const
 
 void ScaleToScreenEffect::prePaintScreen(ScreenPrePaintData &data, std::chrono::milliseconds presentTime)
 {
-    if (!m_state.isScaling) {
-        effects->prePaintScreen(data, presentTime);
-        return;
+    if (m_state.isScaling) {
+        data.mask |= PAINT_WINDOW_OPAQUE;
+        data.mask |= ~PAINT_SCREEN_BACKGROUND_FIRST;
     }
 
     effects->prePaintScreen(data, presentTime);
 }
 
-void ScaleToScreenEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport,
+void ScaleToScreenEffect::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, 
                                       int mask, const Region &region, LogicalOutput *screen)
 {
     if (!m_state.isScaling) {
@@ -218,7 +224,51 @@ void ScaleToScreenEffect::paintScreen(const RenderTarget &renderTarget, const Re
         return;
     }
 
-    effects->paintScreen(renderTarget, viewport, mask, region, screen);
+    const auto scale = viewport.scale();
+    const QRectF winGeo = m_state.window->frameGeometry();
+    const QMarginsF margins = m_settings.margins;
+    
+    const QRectF visualRect = winGeo.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
+    const QSize pixelSize = (visualRect.size() * scale).toSize();
+
+    if (!m_buffer) {
+        createBuffer(pixelSize, *renderTarget.colorDescription());
+    }
+
+    RenderTarget offscreenTarget(m_buffer->framebuffer.get(), renderTarget.colorDescription());
+    RenderViewport offscreenViewport(visualRect, scale, offscreenTarget, QPoint(0,0));
+
+    GLFramebuffer::pushFramebuffer(m_buffer->framebuffer.get());
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    effects->paintScreen(offscreenTarget, offscreenViewport, mask, region, screen);
+    
+    GLFramebuffer::popFramebuffer();
+
+    //Clear the screen to black (pillarboxing)
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    GLShader *shader = ShaderManager::instance()->shader(ShaderTrait::MapTexture | ShaderTrait::TransformColorspace);
+    ShaderManager::instance()->pushShader(shader);
+
+    const QRectF targetGeo = m_state.targetRect;
+    const float scaleX = targetGeo.width() / visualRect.width();
+    const float scaleY = targetGeo.height() / visualRect.height();
+
+    QMatrix4x4 matrix;
+    matrix.translate(targetGeo.x() * scale, targetGeo.y() * scale);
+    matrix.scale(scaleX, scaleY);
+
+    shader->setUniform(GLShader::Mat4Uniform::ModelViewProjectionMatrix, viewport.projectionMatrix() * matrix);
+    shader->setUniform(GLShader::IntUniform::TextureWidth, m_buffer->texture->width());
+    shader->setUniform(GLShader::IntUniform::TextureHeight, m_buffer->texture->height());
+    shader->setColorspaceUniforms(ColorDescription::sRGB, renderTarget.colorDescription(), RenderingIntent::Perceptual);
+
+    m_buffer->texture->render(visualRect.size() * scale);
+
+    ShaderManager::instance()->popShader();
 }
 
 void ScaleToScreenEffect::postPaintScreen()
@@ -229,6 +279,20 @@ void ScaleToScreenEffect::postPaintScreen()
     }
 
     effects->postPaintScreen();
+}
+
+void ScaleToScreenEffect::paintWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data)
+{
+    if (!m_state.isScaling) {
+        // Passthrough if we're not scaling
+        effects->paintWindow(renderTarget, viewport, w, mask, region, data);
+        return;
+    }
+
+    // Paint only our single window when we're in scaled mode
+    if (m_state.window == w) {
+        effects->renderWindow(renderTarget, viewport, w, mask, region, data);
+    }
 }
 
 bool ScaleToScreenEffect::pointerMotion(PointerMotionEvent *event)
@@ -283,6 +347,26 @@ void ScaleToScreenEffect::onWindowActivated(KWin::EffectWindow *w)
             stopScaling();
             m_state.window = nullptr;
         }
+    }
+}
+
+void ScaleToScreenEffect::createBuffer(const QSize &size, const ColorDescription &color)
+{
+    effects->makeOpenGLContextCurrent();
+    m_buffer = std::make_unique<OffscreenBuffer>();
+    
+    const GLenum format = (color == *ColorDescription::sRGB) ? GL_RGBA8 : GL_RGBA16F;
+    m_buffer->texture = GLTexture::allocate(format, size);
+    m_buffer->texture->setFilter(GL_LINEAR);
+    m_buffer->texture->setWrapMode(GL_CLAMP_TO_EDGE);
+    m_buffer->framebuffer = std::make_unique<GLFramebuffer>(m_buffer->texture.get());
+}
+
+void ScaleToScreenEffect::freeBuffer()
+{
+    if (m_buffer) {
+        effects->makeOpenGLContextCurrent();
+        m_buffer.reset();
     }
 }
 

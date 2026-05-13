@@ -3,6 +3,7 @@
 #include "effect/effect.h"
 #include "input.h"
 #include <QLoggingCategory>
+#include "opengl/glutils.h"
 
 namespace KWin {
 
@@ -36,6 +37,7 @@ private:
     void prePaintScreen(ScreenPrePaintData &data, std::chrono::milliseconds presentTime) override;
     void paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, int mask, const Region &region, LogicalOutput *screen) override;
     void postPaintScreen() override;
+    void paintWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data) override;
 
     // InputEventFilter Interface
     bool pointerMotion(PointerMotionEvent *event) override;
@@ -60,7 +62,7 @@ private:
     struct Settings {
         Shader shader{Shader::Simple};
         //IgnoreAspectRatio, KeepAspectRatio, KeepAspectRatioByExpanding
-        Qt::AspectRatioMode aspectRatio{Qt::IgnoreAspectRatio};
+        Qt::AspectRatioMode aspectRatio{Qt::KeepAspectRatio};
         QMargins margins{};
         bool blockScreenInput{false};
         bool confinePointer{false};
@@ -78,6 +80,16 @@ private:
 
     Settings m_settings;
     State m_state;
+
+    // Inspired from KWin's zoom effect
+    struct OffscreenBuffer {
+        std::unique_ptr<GLTexture> texture;
+        std::unique_ptr<GLFramebuffer> framebuffer;
+    };
+    std::unique_ptr<OffscreenBuffer> m_buffer;
+
+    void createBuffer(const QSize &size, const ColorDescription &color);
+    void freeBuffer();
 };
 
 } // namespace KWin
