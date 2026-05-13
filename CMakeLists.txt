@@ -26,17 +26,16 @@ find_package(KWin 6.0 REQUIRED NO_MODULE)
 
 add_library(${PROJECT_NAME} MODULE
     main.cpp
-    scale_to_screen_effect.h scale_to_screen_effect.cpp
+    scale_to_screen_effect.h
+    scale_to_screen_effect.cpp
+    scale_to_screen.qrc
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    Qt6::Core
-    Qt6::Gui
-    KF6::ConfigCore
+    KWin::kwin
+
     KF6::GlobalAccel
     KF6::I18n
-    KF6::CoreAddons
-    KWin::kwin
 )
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
