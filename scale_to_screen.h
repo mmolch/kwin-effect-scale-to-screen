@@ -27,16 +27,20 @@ private:
                                QMargins windowMargins, Qt::AspectRatioMode aspectRatio) const;
     void updateTargetRect();
 
-    // Maps the window position to the targetRect so that
-    // the window overlaps at the cursor position in the targetRect
     QPointF mapWindowToCursor(QPointF cursorPosition) const;
-    bool syncWindowToCursor(QPointF cursorPosition) const;
+    void syncWindowToCursor(QPointF cursorPosition) const;
     bool shouldBlockInput(QPointF cursorPosition) const;
+
+    // Call inside paintWindow()
+    void renderWindowToTexture(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data);
+    void renderTexture(const RenderTarget &renderTarget, const RenderViewport &viewport);
+    void clearScreen();
 
     // Effect Interface
     void prePaintScreen(ScreenPrePaintData &data, std::chrono::milliseconds presentTime) override;
     void paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, int mask, const Region &region, LogicalOutput *screen) override;
     void postPaintScreen() override;
+    void prePaintWindow(RenderView *view, EffectWindow *w, WindowPrePaintData &data, std::chrono::milliseconds presentTime) override;
     void paintWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data) override;
 
     // InputEventFilter Interface
@@ -56,6 +60,8 @@ private slots:
     void onWindowAdded(EffectWindow *w);
     void onWindowDeleted(EffectWindow *w);
     void onWindowActivated(KWin::EffectWindow *w);
+
+    void onKeepAboveChanged(bool keepAbove);
 
 private:
     enum class Shader: int {
