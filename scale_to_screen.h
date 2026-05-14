@@ -9,12 +9,12 @@ namespace KWin {
 
 Q_DECLARE_LOGGING_CATEGORY(lcScaleToScreen)
 
-class ScaleToScreenEffect : public Effect, public InputEventFilter
+class ScaleToScreen : public Effect, public InputEventFilter
 {
     Q_OBJECT
 public:
-    explicit ScaleToScreenEffect();
-    ~ScaleToScreenEffect() override;
+    explicit ScaleToScreen();
+    ~ScaleToScreen() override;
 
 private:
     void updateScalingState();

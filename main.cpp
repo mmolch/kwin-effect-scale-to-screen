@@ -3,7 +3,7 @@
 namespace KWin
 {
 
-KWIN_EFFECT_FACTORY(ScaleToScreenEffect, "metadata.json");
+KWIN_EFFECT_FACTORY(ScaleToScreen, "metadata.json");
 
 } // namespace KWin
 
