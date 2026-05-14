@@ -1,7 +1,7 @@
 Package: kwin-effect-scale-to-screen
-Version: 0.1.0
+Version: 0.2.0
 Maintainer: Moritz Molch <mail@moritzmolch.de>
 Depends: libkwin6
 Architecture: amd64
 Homepage: https://github.com/mmolch/kwin-effect-scale-to-screen
-Description: https://github.com/mmolch/kwin-effect-scale-to-screen
+Description: An effect for KWin for scaling windows to fit the screen

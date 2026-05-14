@@ -1,13 +1,18 @@
 {
-    "KPlugin": {
-        "Name": "Scale to Screen",
-        "Description": "Scale windows to fit the screen",
-        "Version": "0.1",
-        "License": "GPL",
-        "EnabledByDefault": false,
-        "Category": "Focus",
-        "Authors": [
-            { "Name": "Moritz Molch" }
-        ]
-    }
+  "KPlugin": {
+    "Name": "Scale to Screen",
+    "Description": "Scale windows to fit the screen",
+    "Version": "0.2.0",
+    "License": "GPL",
+    "EnabledByDefault": false,
+    "Category": "Focus",
+    "Website": "https://github.com/mmolch/kwin-effect-scale-to-screen",
+    "Authors": [
+      {
+        "Name":  "Moritz Molch",
+        "Email": "mail@moritzmolch.de",
+        "Task":  "Developer"
+      }
+    ]
+  }
 }
