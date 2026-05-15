@@ -17,12 +17,11 @@ jobs:
       - name: Install dependencies
         run: |
           apt update
-          apt install -y git cmake ninja-build build-essential kwin-dev extra-cmake-modules libkf6globalaccel-dev libkf6i18n-dev pkgconf libdrm-dev
+          apt install -y cmake ninja-build build-essential kwin-dev extra-cmake-modules libkf6globalaccel-dev libkf6i18n-dev pkgconf libdrm-dev
 
       - name: Configure CMake
         run: |
-          GIT_HASH=$(git rev-parse --short HEAD)
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DPROJECT_VERSION_SUFFIX=${GIT_HASH}
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel
 
       - name: Build
         run: cmake --build build --parallel
