@@ -11,6 +11,12 @@
 #include "core/rendertarget.h"
 #include "core/renderviewport.h"
 #include <QDirIterator>
+#include "core/graphicsbuffer.h"
+#include "scene/surfaceitem.h"
+#include "scene/windowitem.h"
+#include "scene/itemrenderer_opengl.h"
+#include "compositor.h"
+#include "scene/workspacescene.h"
 
 static void ensureResources()
 {
@@ -73,31 +79,41 @@ void ScaleToScreen::startScaling()
     m_state.originalKeepAbove = m_state.window->window()->keepAbove();
     m_state.window->window()->setNoBorder(m_settings.noBorder);
     m_state.window->window()->setKeepAbove(true);
+
+    m_state.windowSize = m_state.window->frameGeometry().size();
     connect(m_state.window->window(), &Window::keepAboveChanged, this, &ScaleToScreen::onKeepAboveChanged);
-    m_state.isScaling = true;
+    connect(m_state.window->window(), &Window::frameGeometryChanged, this, &ScaleToScreen::onFrameGeometryChanged);
+    connect(m_state.window->window(), &Window::fullScreenChanged, this, &ScaleToScreen::onFullScreenChanged);
+
     updateTargetRect();
+    updatePaintData();
     syncWindowToCursor(input()->globalPointer());
 
     qCDebug(lcScaleToScreen) << "installInputEventFilter";
     input()->installInputEventFilter(this);
+
     effects->addRepaintFull();
+
+    m_state.isScaling = true;
 }
 
 void ScaleToScreen::stopScaling()
 {
     qCDebug(lcScaleToScreen) << "stopScaling()";
+
+    m_state.isScaling = false;
+
     qCDebug(lcScaleToScreen) << "uninstallInputEventFilter";
     input()->uninstallInputEventFilter(this);
 
     disconnect(m_state.window->window(), &Window::keepAboveChanged, this, &ScaleToScreen::onKeepAboveChanged);
+    disconnect(m_state.window->window(), &Window::frameGeometryChanged, this, &ScaleToScreen::onFrameGeometryChanged);
+    disconnect(m_state.window->window(), &Window::fullScreenChanged, this, &ScaleToScreen::onFullScreenChanged);
 
-    m_state.isScaling = false;
-    freeBuffer();
     m_state.window->window()->setKeepAbove(m_state.originalKeepAbove);
     m_state.window->window()->setNoBorder(m_state.originalNoBorder);
     m_state.window->window()->moveResize(RectF{m_state.originalPosition.x(), m_state.originalPosition.y(),
                                             m_state.window->width(),m_state.window->height()});
-    m_state.window = nullptr;
     effects->addRepaintFull();
 }
 
@@ -162,14 +178,29 @@ QRectF ScaleToScreen::calculateTargetRect(QRectF screenGeometry, QRectF windowGe
 
 void ScaleToScreen::updateTargetRect()
 {
-    if (!m_state.window) {
-        return;
-    }
-
     const QRectF screenGeometry = effects->clientArea(FullScreenArea, m_state.window);
     const QRectF windowGeometry = m_state.window->frameGeometry();
     m_state.targetRect = calculateTargetRect(screenGeometry, windowGeometry, m_settings.margins, m_settings.aspectRatio);
     qCDebug(lcScaleToScreen) << "new targetRect" << m_state.targetRect;
+}
+
+void ScaleToScreen::updatePaintData()
+{
+    const QRectF winGeo = m_state.window->frameGeometry();
+    const QMarginsF margins = m_settings.margins;
+
+    const QRectF visualRect = winGeo.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
+    const QRectF targetGeo = m_state.targetRect;
+
+    const float scaleX = targetGeo.width() / visualRect.width();
+    const float scaleY = targetGeo.height() / visualRect.height();
+
+    m_state.paintData.setXTranslation(targetGeo.x());
+    m_state.paintData.setYTranslation(targetGeo.y());
+    m_state.paintData.setXScale(scaleX);
+    m_state.paintData.setYScale(scaleY);
+    
+    m_state.paintData.setOpacity(1.0);
 }
 
 QPointF ScaleToScreen::mapWindowToCursor(QPointF cursorPosition) const
@@ -219,66 +250,28 @@ bool ScaleToScreen::shouldBlockInput(QPointF pos) const
     // Block if the cursor is outside the target window
     const bool cursorIsOutsideTargetRect = !m_state.targetRect.contains(pos);
 
-    // Block if the cursor isn't inside the window
+    // Block if the cursor isn't inside the actual window
     const bool cursorIsNotInWindow = !m_state.window->frameGeometry().contains(pos.toPoint());
     
     return cursorIsOutsideTargetRect || cursorIsNotInWindow; 
 }
 
-void ScaleToScreen::renderWindowToTexture(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data)
+void ScaleToScreen::renderScaledWindowItem(const KWin::RenderTarget &target, 
+                                           const KWin::RenderViewport &viewport,
+                                           const Region &region) 
 {
-    const auto scale = viewport.scale();
-    const QRectF winGeo = m_state.window->frameGeometry();
-    const QMarginsF margins = m_settings.margins;
+    auto renderer = static_cast<KWin::ItemRendererOpenGL *>(KWin::Compositor::self()->scene()->renderer());
+    Item *item = m_state.window->window()->windowItem()->windowContainer();
 
-    const QRectF visualRect = winGeo.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
-    const QSize pixelSize = (visualRect.size() * scale).toSize();
-
-    if (!m_buffer) {
-        createBuffer(pixelSize, *renderTarget.colorDescription());
-    }
-
-    RenderTarget offscreenTarget(m_buffer->framebuffer.get(), renderTarget.colorDescription());
-    RenderViewport offscreenViewport(visualRect, scale, offscreenTarget, QPoint(0,0));
-
-    GLFramebuffer::pushFramebuffer(m_buffer->framebuffer.get());
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    effects->renderWindow(offscreenTarget, offscreenViewport, w, mask, region, data);
-    
-    GLFramebuffer::popFramebuffer();
-
-    //saveBufferToDisk();
-}
-
-void ScaleToScreen::renderTexture(const RenderTarget &renderTarget, const RenderViewport &viewport)
-{
-    GLShader *shader = getShader(m_settings.shader);
-    ShaderManager::instance()->pushShader(shader);
-
-    const auto scale = viewport.scale();
-    const QRectF winGeo = m_state.window->frameGeometry();
-    const QMarginsF margins = m_settings.margins;
-
-    const QRectF visualRect = winGeo.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
-    const QRectF targetGeo = m_state.targetRect;
-
-    const float scaleX = targetGeo.width() / visualRect.width();
-    const float scaleY = targetGeo.height() / visualRect.height();
-
-    QMatrix4x4 matrix;
-    matrix.translate(targetGeo.x() * scale, targetGeo.y() * scale);
-    matrix.scale(scaleX, scaleY);
-
-    shader->setUniform(GLShader::Mat4Uniform::ModelViewProjectionMatrix, viewport.projectionMatrix() * matrix);
-    shader->setUniform(GLShader::IntUniform::TextureWidth, m_buffer->texture->width());
-    shader->setUniform(GLShader::IntUniform::TextureHeight, m_buffer->texture->height());
-    shader->setColorspaceUniforms(ColorDescription::sRGB, renderTarget.colorDescription(), RenderingIntent::Perceptual);
-
-    m_buffer->texture->render(visualRect.size() * scale);
-
-    ShaderManager::instance()->popShader();
+    renderer->renderItem(target, 
+                         viewport, 
+                         item, 
+                         0, // mask
+                         region, // The area to paint
+                         m_state.paintData, 
+                         nullptr, // No filter (render all children)
+                         nullptr  // No hole filter
+    );
 }
 
 void ScaleToScreen::clearScreen()
@@ -297,37 +290,6 @@ void ScaleToScreen::prePaintScreen(ScreenPrePaintData &data, std::chrono::millis
     effects->prePaintScreen(data, presentTime);
 }
 
-void ScaleToScreen::paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, 
-                                      int mask, const Region &region, LogicalOutput *screen)
-{
-    if (!m_state.isScaling) {
-        effects->paintScreen(renderTarget, viewport, mask, region, screen);
-        return;
-    }
-
-    effects->paintScreen(renderTarget, viewport, mask, region, screen);
-}
-
-void ScaleToScreen::postPaintScreen()
-{
-    if (!m_state.isScaling) {
-        effects->postPaintScreen();
-        return;
-    }
-
-    effects->postPaintScreen();
-}
-
-void ScaleToScreen::prePaintWindow(RenderView *view, EffectWindow *w, WindowPrePaintData &data, std::chrono::milliseconds presentTime)
-{
-    if (!m_state.isScaling) {
-        effects->prePaintWindow(view, w, data, presentTime);
-        return;
-    }
-
-    effects->prePaintWindow(view, w, data, presentTime);
-}
-
 void ScaleToScreen::paintWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data)
 {
     if (!m_state.isScaling) {
@@ -336,9 +298,8 @@ void ScaleToScreen::paintWindow(const RenderTarget &renderTarget, const RenderVi
     }
 
     if (m_state.window == w) {
-        renderWindowToTexture(renderTarget, viewport, w, mask, region, data);
         clearScreen();
-        renderTexture(renderTarget, viewport);
+        renderScaledWindowItem(renderTarget, viewport, region);
     } else {
         effects->paintWindow(renderTarget, viewport, w, mask, region, data);
     }
@@ -375,8 +336,8 @@ void ScaleToScreen::constrainPointer(QPointF pos)
 {
     QRectF constraintRect = m_state.window->frameGeometry();
     if (!constraintRect.contains(pos)) {
-        pos.setX(std::clamp(pos.x(), constraintRect.left(), constraintRect.right()));
-        pos.setY(std::clamp(pos.y(), constraintRect.top(), constraintRect.bottom()));
+        pos.setX(std::clamp(pos.x(), constraintRect.left(), constraintRect.right()-1));
+        pos.setY(std::clamp(pos.y(), constraintRect.top(), constraintRect.bottom()-1));
         input()->warpPointer(pos);
     }
 }
@@ -407,10 +368,12 @@ void ScaleToScreen::onWindowDeleted(EffectWindow *w)
 void ScaleToScreen::onWindowActivated(KWin::EffectWindow *w)
 {
     qCDebug(lcScaleToScreen) << "onWindowActivated" << w;
-    if (m_state.window) {
+
+    if (w == m_state.window) {
+        startScaling();
+    } else {
         if (m_state.isScaling) {
             stopScaling();
-            m_state.window = nullptr;
         }
     }
 }
@@ -424,65 +387,33 @@ void ScaleToScreen::onKeepAboveChanged(bool keepAbove)
     }
 }
 
-GLShader *ScaleToScreen::getShader(Shader shader)
+void ScaleToScreen::onFrameGeometryChanged(RectF geometry)
 {
-    if (shader == Shader::Builtin) {
-        return ShaderManager::instance()->shader(ShaderTrait::MapTexture | ShaderTrait::TransformColorspace);
-    }
-
-    if (!m_state.shaders.contains(shader)) {
-        switch (shader)
-        {
-        default:
-            return getShader(Shader::Builtin);
-        }
-        
-    }
-    return m_state.shaders.at(shader).get();
-}
-
-void ScaleToScreen::createBuffer(const QSize &size, const ColorDescription &color)
-{
-    effects->makeOpenGLContextCurrent();
-    m_buffer = std::make_unique<OffscreenBuffer>();
-    
-    const GLenum format = (color == *ColorDescription::sRGB) ? GL_RGBA8 : GL_RGBA16F;
-    m_buffer->texture = GLTexture::allocate(format, size);
-    m_buffer->texture->setFilter(GL_LINEAR);
-    m_buffer->texture->setWrapMode(GL_CLAMP_TO_EDGE);
-    m_buffer->framebuffer = std::make_unique<GLFramebuffer>(m_buffer->texture.get());
-}
-
-void ScaleToScreen::freeBuffer()
-{
-    if (m_buffer) {
-        effects->makeOpenGLContextCurrent();
-        m_buffer.reset();
-    }
-}
-
-void ScaleToScreen::saveBufferToDisk()
-{
-    if (!m_buffer || !m_buffer->texture) {
+    if (m_state.windowSize == geometry.size()) {
         return;
     }
 
-    const QSize size = m_buffer->texture->size();
-    QImage img(size, QImage::Format_ARGB32_Premultiplied);
-    GLFramebuffer::pushFramebuffer(m_buffer->framebuffer.get());
-    glReadPixels(0, 0, size.width(), size.height(), GL_BGRA, GL_UNSIGNED_BYTE, img.bits());
+    m_state.windowSize = geometry.size();
 
-    GLFramebuffer::popFramebuffer();
+    updateTargetRect();
+    updatePaintData();
+    syncWindowToCursor(input()->globalPointer());
+}
 
-    img = img.flipped(Qt::Vertical);
+void ScaleToScreen::onFullScreenChanged()
+{
+    if (m_state.window->window()->isFullScreen()) {
+        // Enter real fullscreen mode
+        stopScaling();
 
-    QString path = QStringLiteral("/tmp/kwin_dump_%1.png")
-                   .arg(QDateTime::currentMSecsSinceEpoch());
-    
-    if (img.save(path, "PNG")) {
-        qCDebug(lcScaleToScreen) << "Saved texture to:" << path;
-    } else {
-        qCWarning(lcScaleToScreen) << "Failed to save texture to:" << path;
+        m_state.window->window()->moveResize(RectF{
+            0,
+            0,
+            m_state.window->width(),
+            m_state.window->height()
+        });
+
+        m_state.window = nullptr;
     }
 }
 

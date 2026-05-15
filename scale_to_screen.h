@@ -3,7 +3,6 @@
 #include "effect/effect.h"
 #include "input.h"
 #include <QLoggingCategory>
-#include "opengl/glutils.h"
 
 namespace KWin {
 
@@ -26,21 +25,17 @@ private:
     QRectF calculateTargetRect(QRectF screenGeometry, QRectF windowGeometry,
                                QMargins windowMargins, Qt::AspectRatioMode aspectRatio) const;
     void updateTargetRect();
+    void updatePaintData();
 
     QPointF mapWindowToCursor(QPointF cursorPosition) const;
     void syncWindowToCursor(QPointF cursorPosition) const;
     bool shouldBlockInput(QPointF cursorPosition) const;
 
-    // Call inside paintWindow()
-    void renderWindowToTexture(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data);
-    void renderTexture(const RenderTarget &renderTarget, const RenderViewport &viewport);
     void clearScreen();
+    void renderScaledWindowItem(const KWin::RenderTarget &target, const KWin::RenderViewport &viewport, const Region &region);
 
     // Effect Interface
     void prePaintScreen(ScreenPrePaintData &data, std::chrono::milliseconds presentTime) override;
-    void paintScreen(const RenderTarget &renderTarget, const RenderViewport &viewport, int mask, const Region &region, LogicalOutput *screen) override;
-    void postPaintScreen() override;
-    void prePaintWindow(RenderView *view, EffectWindow *w, WindowPrePaintData &data, std::chrono::milliseconds presentTime) override;
     void paintWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data) override;
 
     // InputEventFilter Interface
@@ -49,9 +44,6 @@ private:
     bool pointerAxis(KWin::PointerAxisEvent *event) override;
 
     void constrainPointer(QPointF pos);
-
-    void saveBufferToDisk();
-
 
 private slots:
     // Scales / unscales the active window
@@ -62,17 +54,11 @@ private slots:
     void onWindowActivated(KWin::EffectWindow *w);
 
     void onKeepAboveChanged(bool keepAbove);
+    void onFrameGeometryChanged(RectF geometry);
+    void onFullScreenChanged();
 
 private:
-    enum class Shader: int {
-        Builtin = 0
-    };
-    Q_ENUM(Shader)
-
-    GLShader *getShader(Shader);
-
     struct Settings {
-        Shader shader{Shader::Builtin};
         //IgnoreAspectRatio, KeepAspectRatio, KeepAspectRatioByExpanding
         Qt::AspectRatioMode aspectRatio{Qt::KeepAspectRatio};
         QMargins margins{};
@@ -86,21 +72,16 @@ private:
         QPointF originalPosition{};
         bool originalNoBorder{false};
         bool originalKeepAbove{false};
-        std::map<Shader, std::unique_ptr<KWin::GLShader>> shaders;
+
+        // Use this to determine whether window's size changed when geometry changes
+        QSizeF windowSize;
+
+        // Holds the transformation to scale and position the upscaled image
+        WindowPaintData paintData;
     };
 
     Settings m_settings;
     State m_state;
-
-    // Inspired from KWin's zoom effect
-    struct OffscreenBuffer {
-        std::unique_ptr<GLTexture> texture;
-        std::unique_ptr<GLFramebuffer> framebuffer;
-    };
-    std::unique_ptr<OffscreenBuffer> m_buffer;
-
-    void createBuffer(const QSize &size, const ColorDescription &color);
-    void freeBuffer();
 };
 
 } // namespace KWin
