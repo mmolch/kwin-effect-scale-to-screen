@@ -25,8 +25,11 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
 
+      - name: Packaging
+        run: cd build && cpack -G DEB
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-output
-          path: build/ScaleToScreen.so
+          path: build/cpack_artifacts/*.deb
