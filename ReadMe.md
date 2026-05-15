@@ -2,19 +2,20 @@
 **ScaleToScreen** is a custom **KWin 6 effect** (written against KDE 6.6) that scales the active window to fullscreen. It's basically a **poor-man's gamescope** implemented as a KWin Effect. This is simply the first little project that came to mind when I decided to learn a little about the KWin internals and while it certainly might have its limits, it's actually working rather well if you need a quick-and-easy game upscaler.
 
 ## Build & Install
-You have to install the necessary development packages on your distribution. \
-Kubuntu need the packages `kwin-dev extra-cmake-modules`
+You have to install the necessary development packages on your distribution.
+### Build requirements
+ - Ubuntu 26.04: `cmake ninja-build build-essential kwin-dev extra-cmake-modules libkf6globalaccel-dev libkf6i18n-dev pkgconf libdrm-dev`
 
+### Building
 There is a small CMake-wrapper Makefile to build it with:
 ```bash
 make
 ```
 
+### Installation
 If the plugin built correctly you'll have a `ScaleToScreen.so` inside the `build/` directory. It depends on your Linux distribution where to put it. It needs to go into the qt6 plugins directory under `kwin/effects/plugins/`
 You might have to create the additional `plugins` directory under `effects`.
-
- - Install paths
-   - Kubuntu 26.04: `/usr/lib/x86_64-linux-gnu/qt6/plugins/kwin/effects/plugins/`
+- Ubuntu 26.04: `/usr/lib/x86_64-linux-gnu/qt6/plugins/kwin/effects/plugins/`
 
 ## Usage
 Once installed, you'll find the plugin in `System Settings -> Desktop Effects -> Focus -> Scale to Screen`.
