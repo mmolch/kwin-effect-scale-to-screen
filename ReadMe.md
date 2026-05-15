@@ -1,5 +1,5 @@
 # ScaleToScreen – A KWin effect to scale windows (e.g. games) to fullscreen 
-**ScaleToScreen** is a custom **KWin 6 effect** (written against KDE 6.6) that scales the active window to fill the entire screen. It's basically a **poor-man's gamescope** implemented as a KWin Effect. This is simply the first little project that came to mind when I decided to learn a little about the KWin internals and while it certainly might have its limits, it's actually working rather well if you need a quick-and-easy game upscaler.
+**ScaleToScreen** is a custom **KWin 6 effect** (written against KDE 6.6) that scales the active window to fullscreen. It's basically a **poor-man's gamescope** implemented as a KWin Effect. This is simply the first little project that came to mind when I decided to learn a little about the KWin internals and while it certainly might have its limits, it's actually working rather well if you need a quick-and-easy game upscaler.
 
 ## Build & Install
 You have to install the necessary development packages on your distro and then you can build it with
