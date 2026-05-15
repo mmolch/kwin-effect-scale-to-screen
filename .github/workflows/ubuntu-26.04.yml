@@ -2,7 +2,8 @@ name: Ubuntu 26.04
 
 on:
   push:
-  pull_request:
+    tags:
+      - "v*"
 
 jobs:
   build:
@@ -28,9 +29,7 @@ jobs:
       - name: Packaging
         run: cd build && cpack -G DEB
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload .deb to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: deb-package
-          path: build/cpack_artifacts/*.deb
-          compression-level: 0
+          files: build/cpack_artifacts/*.deb
