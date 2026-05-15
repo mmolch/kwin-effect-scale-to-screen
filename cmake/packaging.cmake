@@ -1,0 +1,38 @@
+include("${CMAKE_CURRENT_LIST_DIR}/DetectLinuxDistro.cmake")
+detect_linux_distro(DISTRIBUTION_NAME DISTRIBUTION_VERSION)
+
+set(ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+
+if(ARCH STREQUAL "x86_64")
+    set(DEB_ARCH "amd64")
+elseif(ARCH MATCHES "i[3-6]86")
+    set(DEB_ARCH "i386")
+elseif(ARCH STREQUAL "aarch64")
+    set(DEB_ARCH "arm64")
+elseif(ARCH STREQUAL "armv7l")
+    set(DEB_ARCH "armhf")
+else()
+    set(DEB_ARCH "${ARCH}") # fallback
+endif()
+
+set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set(CPACK_PACKAGE_VENDOR "Moritz Molch")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "${DEB_ARCH}")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/mmolch/kwin-effect-scale-to-screen")
+set(CPACK_PACKAGE_CONTACT "Moritz Molch <mail@moritzmolch.de>")
+set(CPACK_PACKAGE_DESCRIPTION "A KWin effect to scale windows (e.g. games) to fullscreen")
+set(CPACK_PACKAGE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpack_artifacts)
+set(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/LICENSE)
+set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${PROJECT_VERSION}-${DISTRIBUTION_NAME}${DISTRIBUTION_VERSION}-${DEB_ARCH}")
+set(CPACK_STRIP_FILES YES)
+
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "\
+            libkwin6")
+set(CPACK_RPM_PACKAGE_REQUIRES "\
+            libkwin6")
+
+include(CPack)
