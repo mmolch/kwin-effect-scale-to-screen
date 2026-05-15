@@ -1,5 +1,5 @@
 # ScaleToScreen – A KWin effect to scale windows (e.g. games) to fullscreen 
-**ScaleToScreen** is a custom **KWin 6 effect** (written against KDE 6.6) that temporarily scales the active window to fill the entire screen. It's basically a **poor-man's gamescope** implemented as a KWin Effect. This is simply the first little project that came to mind when I decided to learn a little about the KWin internals and while it certainly has its limits and bugs, it's actually working rather well if you need a quick-and-easy game upscaler.
+**ScaleToScreen** is a custom **KWin 6 effect** (written against KDE 6.6) that scales the active window to fill the entire screen. It's basically a **poor-man's gamescope** implemented as a KWin Effect. This is simply the first little project that came to mind when I decided to learn a little about the KWin internals and while it certainly might have its limits, it's actually working rather well if you need a quick-and-easy game upscaler.
 
 ## Build & Install
 You have to install the necessary development packages on your distro and then you can build it with
@@ -14,18 +14,17 @@ Yes, that's correct. You might have to create the additional `plugins` directory
 ## Usage
 Once installed, you'll find the plugin in `System Settings -> Desktop Effects -> Focus -> Scale to Screen`.
 
-Once you have enabled the plugin, you can press **`Ctrl + Alt + Shift + A`**
-to upscale your currently active window. Once the focus changes to another window the effect ends and the window goes back to the previous state.
+After enabling the plugin, you can press **`Ctrl + Alt + Shift + A`** \
+to toggle the effect (The key combination can be changed in the system settings under `Window Management -> Scale the active window to fullscreen`). Once the focus changes to another window the effect ends and the window goes back to the previous state. It remembers the window though and will go back into scale-mode when you activate the window again.
 
 ## How it works
- - Unfortunately it's not possible to redirect input for a KWin plugin, so I had to implement a "Moving Window" scaler. I move the actual window behind the upscaled texture that's rendered to the screen so that the mouse cursor overlaps with the physical pixels of the window.
- - The window itself is rendered to a texture and then upscaled to show on the screen.
+ - I didn't find a way to redirect input in a KWin plugin and worked around it by implementing a "Moving Window"-scaler. I move the actual window behind the upscaled image that's rendered to the screen, so that the mouse cursor overlaps with the physical pixels of the window.
+ - The window itself is rendered through renderItem() using the scene's renderer, avoiding additional overhead.
 
 ## Known bugs
- - The most obvious bug is a 1-pixel-jitter when moving the mouse if the display is set to a scale other than 1 and the window doesn't round well with the target rectangle. I found it to be not much of a problem though in most cases (your mileage may vary). If your display scale is set to 1 or you don't use a mouse / touchpad in a game, this bug is of no consequence to you.
 
 ## Contributing
- - All contributions are of welcome, whether it's issue reporting or patches
+While this is a typical "it works for me"-project, I welcome all contributions, whether it's issue-reporting or patches.
 
 ## License
 
