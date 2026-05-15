@@ -369,7 +369,7 @@ void ScaleToScreen::onWindowActivated(KWin::EffectWindow *w)
 {
     qCDebug(lcScaleToScreen) << "onWindowActivated" << w;
 
-    if (w == m_state.window) {
+    if (w && w == m_state.window) {
         startScaling();
     } else {
         if (m_state.isScaling) {
