@@ -1,8 +1,8 @@
 {
   "KPlugin": {
     "Name": "Scale to Screen",
-    "Description": "Scale windows to fit the screen",
-    "Version": "0.2.0",
+    "Description": "Scale windows to fullscreen",
+    "Version": "1.0.0",
     "License": "GPL",
     "EnabledByDefault": false,
     "Category": "Focus",
