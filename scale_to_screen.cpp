@@ -360,8 +360,8 @@ void ScaleToScreen::onWindowDeleted(EffectWindow *w)
     if (w && m_state.window == w) {
         if (m_state.isScaling) {
             stopScaling();
-            m_state.window = nullptr;
         }
+        m_state.window = nullptr;
     }
 }
 
