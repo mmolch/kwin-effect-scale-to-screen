@@ -21,7 +21,7 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DPROJECT_VERSION_SUFFIX=${GITHUB_SHA::7}
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel
 
       - name: Build
         run: cmake --build build --parallel
