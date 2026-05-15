@@ -56,7 +56,7 @@ target_link_libraries(ScaleToScreen PRIVATE
 set(QT6_PLUGIN_DIR "${CMAKE_INSTALL_LIBDIR}/qt6/plugins")
 
 # KWin effects live inside the Qt6 plugin tree
-set(KWIN_EFFECTS_DIR "${QT6_PLUGIN_DIR}/kwin/effects")
+set(KWIN_EFFECTS_DIR "${QT6_PLUGIN_DIR}/kwin/effects/plugins")
 
 install(TARGETS ScaleToScreen
     LIBRARY DESTINATION ${KWIN_EFFECTS_DIR}

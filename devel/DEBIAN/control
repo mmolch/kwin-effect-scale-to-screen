@@ -1,7 +1,0 @@
-Package: kwin-effect-scale-to-screen
-Version: 1.0.0
-Maintainer: Moritz Molch <mail@moritzmolch.de>
-Depends: libkwin6
-Architecture: amd64
-Homepage: https://github.com/mmolch/kwin-effect-scale-to-screen
-Description: A KWin effect to scale windows (e.g. games) to fullscreen
