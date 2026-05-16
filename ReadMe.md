@@ -1,5 +1,5 @@
 # Scale to Screen – A KWin effect to scale windows (e.g. games) to fullscreen 
-**Scale to Screen** is a custom **KWin 6 effect** (written against KDE 6.6) that scales the active window to fullscreen. It's basically a **poor-man's gamescope** implemented as a KWin Effect. This is simply the first little project that came to mind when I decided to learn about the KWin internals and while it certainly might have its limits (no fancy upscaling filters etc.), it's actually working rather well if you need a quick-and-easy window up/down-scaler or if you're in the same situation as me and have older CPUs/GPUs with no or incomplete Vulkan support. Gamescope doesn't run on these at all. My reference platform here is my trusty old 14 years old Celeron N2840.
+**Scale to Screen** is a custom **KWin 6 effect** (written against KDE 6.6) that scales the active window to fullscreen. It's basically a **poor-man's gamescope** implemented as a KWin Effect. This is simply the first little project that came to mind when I decided to learn about the KWin internals and while it certainly might have its bugs and limits (read how it works and the bugs and issues below), it's actually working rather well at least for my purposes. If you need a quick-and-easy window up/down-scaler or if you're in the same situation as me and have older CPUs/GPUs with no or incomplete Vulkan support, just give it a try. Gamescope doesn't run on these at all. My reference platform here is my trusty old 14 years old Celeron N2840 7.5 Watts CPU, which can actually run Crysis fine through wine's D3D to OpenGL layer (it's absolutely playable at 800x500 with lowest settings :-)).
 
 ## Build & Install
 ### Build requirements
@@ -24,9 +24,10 @@ to toggle the effect (The key combination can be changed in the system settings 
 
 ## How it works
  - I didn't find a way to redirect input in a KWin plugin and worked around it by implementing a "Moving Window"-scaler. I move the actual window behind the upscaled image that's rendered to the screen, so that the mouse cursor overlaps with the physical pixels of the window.
- - The window itself is rendered through renderItem() using the scene's renderer, avoiding additional overhead.
+ - The window itself is rendered through renderItem() using the scene's renderer directly to te screen, avoiding additional overhead.
 
-## Known bugs
+## Bugs and issues
+ - The "Moving Window"-technique can be quirky at times while sometimes it doesn't work at depending on the applications or game. 
 
 ## Contributing
 While this is a typical "it works for me"-project, I welcome all contributions, whether it's issue-reporting or patches.
