@@ -19,6 +19,8 @@ You might have to create the additional `plugins` directory under `effects`.
 ## Usage
 Once installed, you'll find the plugin in `System Settings -> Desktop Effects -> Focus -> Scale to Screen`.
 
+![Scale to Screen in the system settings](img/system_settings_scale_to_screen.jpg)
+
 After enabling the plugin, you can press **`Ctrl + Alt + Shift + A`** \
 to toggle the effect (The key combination can be changed in the system settings under `Window Management -> Scale the active window to fullscreen`). Once the focus changes to another window the effect ends and the window goes back to the previous state. It remembers the window though and will go back into scale-mode when you activate the window again.
 
