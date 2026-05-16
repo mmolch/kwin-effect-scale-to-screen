@@ -27,10 +27,16 @@ to toggle the effect (The key combination can be changed in the system settings 
  - The window itself is rendered through renderItem() using the scene's renderer directly to te screen, avoiding additional overhead.
 
 ## Bugs and issues
- - The "Moving Window"-technique can be quirky at times while sometimes it doesn't work at depending on the applications or game. 
+ - The "Moving Window"-technique can be quirky at times while sometimes it doesn't work at all depending on the application or game. Your milage my vary.
 
 ## Contributing
 While this is a typical "it works for me"-project, I welcome all contributions, whether it's issue-reporting or patches.
+Ideas for contributions (not sorted in any way):
+ - Allow one upscaled window per physical display
+ - Configure things like aspect ratio or margins in the system settings
+ - Window-specific profiles
+ - Allow having multiple windows to be marked for scaling when they get the focus
+ - …to be continued
 
 ## License
 
