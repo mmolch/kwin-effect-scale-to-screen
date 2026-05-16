@@ -66,8 +66,8 @@ void ScaleToScreen::startScaling()
     m_state.originalKeepAbove = m_state.window->window()->keepAbove();
     m_state.window->window()->setNoBorder(m_settings.noBorder);
     m_state.window->window()->setKeepAbove(true);
-
     m_state.windowSize = m_state.window->frameGeometry().size();
+
     connect(m_state.window->window(), &Window::keepAboveChanged, this, &ScaleToScreen::onKeepAboveChanged);
     connect(m_state.window->window(), &Window::frameGeometryChanged, this, &ScaleToScreen::onFrameGeometryChanged);
     connect(m_state.window->window(), &Window::fullScreenChanged, this, &ScaleToScreen::onFullScreenChanged);
@@ -232,17 +232,6 @@ void ScaleToScreen::syncWindowToCursor(QPointF cursorPosition) const
     });
 }
 
-bool ScaleToScreen::shouldBlockInput(QPointF pos) const
-{
-    // Block if the cursor is outside the target window
-    const bool cursorIsOutsideTargetRect = !m_state.targetRect.contains(pos);
-
-    // Block if the cursor isn't inside the actual window
-    const bool cursorIsNotInWindow = !m_state.window->frameGeometry().contains(pos.toPoint());
-    
-    return cursorIsOutsideTargetRect || cursorIsNotInWindow; 
-}
-
 void ScaleToScreen::renderScaledWindowItem(const KWin::RenderTarget &target, 
                                            const KWin::RenderViewport &viewport,
                                            const Region &region) 
@@ -292,31 +281,15 @@ void ScaleToScreen::paintWindow(const RenderTarget &renderTarget, const RenderVi
     }
 }
 
-bool ScaleToScreen::pointerMotion(PointerMotionEvent *event)
+bool ScaleToScreen::shouldBlockInput(QPointF pos) const
 {
-    const QPointF &pos = event->position;
-    constrainPointer(pos);
-    bool blockEvent = shouldBlockInput(pos);
-    syncWindowToCursor(pos);
-    return blockEvent;
-}
+    // Block if the cursor is outside the target window
+    const bool cursorIsOutsideTargetRect = !m_state.targetRect.contains(pos);
 
-bool ScaleToScreen::pointerButton(PointerButtonEvent *event)
-{
-    const QPointF &pos = event->position;
-    constrainPointer(pos);
-    bool blockEvent = shouldBlockInput(pos);
-    syncWindowToCursor(pos);
-    return blockEvent;
-}
+    // Block if the cursor isn't inside the actual window
+    const bool cursorIsNotInWindow = !m_state.window->frameGeometry().contains(pos.toPoint());
 
-bool ScaleToScreen::pointerAxis(KWin::PointerAxisEvent *event)
-{
-    const QPointF &pos = event->position;
-    constrainPointer(pos);
-    bool blockEvent = shouldBlockInput(pos);
-    syncWindowToCursor(pos);
-    return blockEvent;
+    return cursorIsOutsideTargetRect || cursorIsNotInWindow;
 }
 
 void ScaleToScreen::constrainPointer(QPointF pos)
@@ -328,6 +301,30 @@ void ScaleToScreen::constrainPointer(QPointF pos)
         input()->warpPointer(pos);
     }
 }
+
+bool ScaleToScreen::handlePointer(const QPointF &pos)
+{
+    constrainPointer(pos);
+    bool blockEvent = shouldBlockInput(pos);
+    syncWindowToCursor(pos);
+    return blockEvent;
+}
+
+bool ScaleToScreen::pointerMotion(PointerMotionEvent *event)
+{
+    return handlePointer(event->position);
+}
+
+bool ScaleToScreen::pointerButton(PointerButtonEvent *event)
+{
+    return handlePointer(event->position);
+}
+
+bool ScaleToScreen::pointerAxis(KWin::PointerAxisEvent *event)
+{
+    return handlePointer(event->position);
+}
+
 
 void ScaleToScreen::toggleEffect()
 {
@@ -344,7 +341,11 @@ void ScaleToScreen::onWindowAdded(EffectWindow *)
 
 void ScaleToScreen::onWindowDeleted(EffectWindow *w)
 {
-    if (w && m_state.window == w) {
+    if (!w) {
+        return;
+    }
+
+    if (m_state.window == w) {
         if (m_state.isScaling) {
             stopScaling();
         }
@@ -354,9 +355,11 @@ void ScaleToScreen::onWindowDeleted(EffectWindow *w)
 
 void ScaleToScreen::onWindowActivated(KWin::EffectWindow *w)
 {
-    qCDebug(lcScaleToScreen) << "onWindowActivated" << w;
+    if (!w) {
+        return;
+    }
 
-    if (w && w == m_state.window) {
+    if (w == m_state.window) {
         startScaling();
     } else {
         if (m_state.isScaling) {

@@ -29,7 +29,6 @@ private:
 
     QPointF mapWindowToCursor(QPointF cursorPosition) const;
     void syncWindowToCursor(QPointF cursorPosition) const;
-    bool shouldBlockInput(QPointF cursorPosition) const;
 
     void clearScreen();
     void renderScaledWindowItem(const KWin::RenderTarget &target, const KWin::RenderViewport &viewport, const Region &region);
@@ -38,12 +37,16 @@ private:
     void prePaintScreen(ScreenPrePaintData &data, std::chrono::milliseconds presentTime) override;
     void paintWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data) override;
 
+    bool shouldBlockInput(QPointF cursorPosition) const;
+    void constrainPointer(QPointF pos);
+    bool handlePointer(const QPointF &pos);
+
     // InputEventFilter Interface
     bool pointerMotion(PointerMotionEvent *event) override;
     bool pointerButton(PointerButtonEvent *event) override;
     bool pointerAxis(KWin::PointerAxisEvent *event) override;
 
-    void constrainPointer(QPointF pos);
+
 
 private slots:
     // Scales / unscales the active window
