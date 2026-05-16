@@ -33,16 +33,15 @@ find_package(KF6 6.0 REQUIRED COMPONENTS Config GlobalAccel I18n CoreAddons)
 find_package(KWin 6.0 REQUIRED NO_MODULE)
 
 configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/metadata.json.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/metadata.json.in
     ${CMAKE_CURRENT_BINARY_DIR}/metadata.json
     @ONLY
 )
 
 add_library(ScaleToScreen MODULE
-    main.cpp
-    scale_to_screen.h
-    scale_to_screen.cpp
-    scale_to_screen.qrc
+    src/main.cpp
+    src/scale_to_screen.h
+    src/scale_to_screen.cpp
 )
 
 target_link_libraries(ScaleToScreen PRIVATE

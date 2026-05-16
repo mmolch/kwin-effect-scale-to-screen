@@ -10,19 +10,12 @@
 #include "opengl/glframebuffer.h"
 #include "core/rendertarget.h"
 #include "core/renderviewport.h"
-#include <QDirIterator>
 #include "core/graphicsbuffer.h"
 #include "scene/surfaceitem.h"
 #include "scene/windowitem.h"
 #include "scene/itemrenderer_opengl.h"
 #include "compositor.h"
 #include "scene/workspacescene.h"
-
-static void ensureResources()
-{
-    // Must initialize resources manually because the effect is a static lib.
-    Q_INIT_RESOURCE(scale_to_screen);
-}
 
 namespace KWin {
 
@@ -33,12 +26,6 @@ ScaleToScreen::ScaleToScreen()
     , InputEventFilter(InputFilterOrder::Effects)
 {
     QLoggingCategory::setFilterRules(QStringLiteral("scaleToScreen.debug=false"));
-
-    ensureResources();
-    //QDirIterator it(":", QDirIterator::Subdirectories);
-    //while (it.hasNext()) {
-    //    qDebug() << it.next();
-    //}
 
     QAction *a = new QAction(this);
     a->setObjectName(QStringLiteral("scaleToScreen")); 
