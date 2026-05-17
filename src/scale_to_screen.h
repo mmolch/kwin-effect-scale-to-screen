@@ -20,7 +20,7 @@ public:
 
     void toggleActiveWindow();
     void addScaler(EffectWindow *w);
-    void removeScaler(EffectWindow *w);
+    ScalerPtr removeScaler(EffectWindow *w);
 
     Scaler *findScaler(EffectWindow *w) const;
 

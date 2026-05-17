@@ -15,7 +15,7 @@ ScaleToScreen::ScaleToScreen()
     : Effect()
     , InputEventFilter(InputFilterOrder::Effects)
 {
-    QLoggingCategory::setFilterRules(QStringLiteral("scaleToScreen.debug=false"));
+    //QLoggingCategory::setFilterRules(QStringLiteral("scaleToScreen.debug=false"));
 
     qCDebug(lcScaleToScreen) << "ScaleToScreen()";
 
@@ -53,7 +53,9 @@ void ScaleToScreen::toggleActiveWindow()
         bool allowedWindowTypes = window->isNormalWindow();
 
         if (allowedWindowTypes) {
-            addScaler(active);
+            if (!active->window()->isFullScreen()) {
+                addScaler(active);
+            }
         }
     }
 }
@@ -95,7 +97,7 @@ void ScaleToScreen::addScaler(EffectWindow *w)
     scaler->setScaling(true);
 }
 
-void ScaleToScreen::removeScaler(EffectWindow *w)
+ScalerPtr ScaleToScreen::removeScaler(EffectWindow *w)
 {
     qCDebug(lcScaleToScreen) << "removeScaler()" << w;
 
@@ -104,8 +106,12 @@ void ScaleToScreen::removeScaler(EffectWindow *w)
     }
 
     if (auto it = m_suspendedScalers.find(w); it != m_suspendedScalers.end()) {
+        auto scalerPtr = std::move(it->second);
         m_suspendedScalers.erase(it);
+        return scalerPtr;
     }
+
+    return nullptr;
 }
 
 Scaler *ScaleToScreen::findScaler(EffectWindow *w) const

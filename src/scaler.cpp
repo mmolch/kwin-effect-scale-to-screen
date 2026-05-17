@@ -107,8 +107,7 @@ void Scaler::onFullScreenChanged()
         // Enter real fullscreen mode
         setScaling(false);
 
-        auto it = m_effect.m_suspendedScalers.find(&m_window);
-        auto scalerPtr = std::move(it->second);
+        auto scalerPtr = m_effect.removeScaler(&m_window);
 
         m_window.window()->moveResize(RectF{
             0,
