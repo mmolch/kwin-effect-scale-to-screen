@@ -40,8 +40,9 @@ configure_file(
 
 add_library(ScaleToScreen MODULE
     src/main.cpp
-    src/scale_to_screen.h
-    src/scale_to_screen.cpp
+    src/scale_to_screen.h src/scale_to_screen.cpp
+    src/scaler.h src/scaler.cpp
+    src/util.h src/util.cpp
 )
 
 target_link_libraries(ScaleToScreen PRIVATE

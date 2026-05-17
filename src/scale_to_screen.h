@@ -1,10 +1,13 @@
 #pragma once
 
+#include "scaler.h"
 #include "effect/effect.h"
 #include "input.h"
 #include <QLoggingCategory>
 
-namespace KWin {
+using namespace KWin;
+
+namespace scaleToScreen {
 
 Q_DECLARE_LOGGING_CATEGORY(lcScaleToScreen)
 
@@ -15,23 +18,13 @@ public:
     explicit ScaleToScreen();
     ~ScaleToScreen() override;
 
-private:
-    void updateScalingState();
-    void startScaling();
-    void stopScaling();
-    bool shouldScale() const;
-    void scaleActiveWindow();
+    void toggleActiveWindow();
+    void addScaler(EffectWindow *w);
+    void removeScaler(EffectWindow *w);
 
-    QRectF calculateTargetRect(QRectF screenGeometry, QRectF windowGeometry,
-                               QMargins windowMargins, Qt::AspectRatioMode aspectRatio) const;
-    void updateTargetRect();
-    void updatePaintData();
-
-    QPointF mapWindowToCursor(QPointF cursorPosition) const;
-    void syncWindowToCursor(QPointF cursorPosition) const;
+    Scaler *findScaler(EffectWindow *w) const;
 
     void clearScreen();
-    void renderScaledWindowItem(const KWin::RenderTarget &target, const KWin::RenderViewport &viewport, const Region &region);
 
     // Effect Interface
     void prePaintScreen(ScreenPrePaintData &data, std::chrono::milliseconds presentTime) override;
@@ -46,45 +39,16 @@ private:
     bool pointerButton(PointerButtonEvent *event) override;
     bool pointerAxis(KWin::PointerAxisEvent *event) override;
 
-
-
 private slots:
-    // Scales / unscales the active window
-    void toggleEffect();
-
     void onWindowAdded(EffectWindow *w);
     void onWindowDeleted(EffectWindow *w);
     void onWindowActivated(KWin::EffectWindow *w);
 
-    void onKeepAboveChanged(bool keepAbove);
-    void onFrameGeometryChanged(RectF geometry);
-    void onFullScreenChanged();
-
 private:
-    struct Settings {
-        //IgnoreAspectRatio, KeepAspectRatio, KeepAspectRatioByExpanding
-        Qt::AspectRatioMode aspectRatio{Qt::KeepAspectRatio};
-        QMargins margins{};
-        bool noBorder{true};
-    };
+    std::unordered_map<EffectWindow*, ScalerPtr> m_suspendedScalers;
+    std::unordered_map<EffectWindow*, ScalerPtr> m_scalers;
 
-    struct State {
-        EffectWindow *window{nullptr};
-        bool isScaling{false};
-        QRectF targetRect{};
-        QPointF originalPosition{};
-        bool originalNoBorder{false};
-        bool originalKeepAbove{false};
-
-        // Use this to determine whether window's size changed when geometry changes
-        QSizeF windowSize;
-
-        // Holds the transformation to scale and position the upscaled image
-        WindowPaintData paintData;
-    };
-
-    Settings m_settings;
-    State m_state;
+    friend class Scaler;
 };
 
-} // namespace KWin
+} // namespace scaleToScreen
