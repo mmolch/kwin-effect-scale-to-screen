@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 set(PROJECT_NAME kwin-effect-scale-to-screen)
-set(PROJECT_VERSION 1.0.3)
+set(PROJECT_VERSION 1.1.0)
 
 set(PROJECT_VERSION_SUFFIX "" CACHE STRING "Optional version suffix")
 
