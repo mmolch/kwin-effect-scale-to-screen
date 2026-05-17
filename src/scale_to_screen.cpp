@@ -15,6 +15,8 @@ ScaleToScreen::ScaleToScreen()
     : Effect()
     , InputEventFilter(InputFilterOrder::Effects)
 {
+    QLoggingCategory::setFilterRules(QStringLiteral("scaleToScreen.debug=false"));
+
     qCDebug(lcScaleToScreen) << "ScaleToScreen()";
 
     QAction *a = new QAction(this);
