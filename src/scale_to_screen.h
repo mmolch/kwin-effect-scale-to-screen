@@ -31,7 +31,6 @@ public:
     void paintWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data) override;
 
     bool shouldBlockInput(QPointF cursorPosition) const;
-    void constrainPointer(QPointF pos);
     bool handlePointer(const QPointF &pos);
 
     // InputEventFilter Interface

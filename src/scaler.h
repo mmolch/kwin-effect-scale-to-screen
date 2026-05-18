@@ -41,7 +41,8 @@ public:
     ~Scaler() override;
 
     bool isScaling() const;
-
+    void constrainCursor(QPointF pos) const;
+    void syncWindowToCursor(QPointF cursorPosition) const;
     void renderScaledWindowItem(const RenderTarget &target, const RenderViewport &viewport, const Region &region);
 
 public slots:
@@ -63,7 +64,6 @@ private:
     void updatePaintData();
 
     QPointF mapWindowToCursor(QPointF cursorPosition) const;
-    void syncWindowToCursor(QPointF cursorPosition) const;
 
     struct State {
         bool isScaling{false};

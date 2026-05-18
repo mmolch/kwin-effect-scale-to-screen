@@ -219,6 +219,16 @@ void Scaler::syncWindowToCursor(QPointF cursorPosition) const
     });
 }
 
+void Scaler::constrainCursor(QPointF pos) const
+{
+    auto constraintRect = m_window.frameGeometry();
+    if (!constraintRect.contains(pos)) {
+        pos.setX(std::clamp(pos.x(), constraintRect.left(), constraintRect.right()-1));
+        pos.setY(std::clamp(pos.y(), constraintRect.top(), constraintRect.bottom()-1));
+        input()->warpPointer(pos);
+    }
+}
+
 void Scaler::renderScaledWindowItem(const RenderTarget &target, const RenderViewport &viewport, const Region &region)
 {
     auto renderer = static_cast<KWin::ItemRendererOpenGL *>(KWin::Compositor::self()->scene()->renderer());

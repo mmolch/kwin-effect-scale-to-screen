@@ -174,24 +174,14 @@ bool ScaleToScreen::shouldBlockInput(QPointF pos) const
     return cursorIsOutsideTargetRect || cursorIsNotInWindow;
 }
 
-void ScaleToScreen::constrainPointer(QPointF pos)
-{
-    // I'm currently only allowing one active scaler in the first place
-    QRectF constraintRect = m_scalers.begin()->second->m_window.frameGeometry();
-    if (!constraintRect.contains(pos)) {
-        pos.setX(std::clamp(pos.x(), constraintRect.left(), constraintRect.right()-1));
-        pos.setY(std::clamp(pos.y(), constraintRect.top(), constraintRect.bottom()-1));
-        input()->warpPointer(pos);
-    }
-}
-
 bool ScaleToScreen::handlePointer(const QPointF &pos)
 {
-    constrainPointer(pos);
-    bool blockEvent = shouldBlockInput(pos);
     // I'm currently only allowing one active scaler in the first place
-    m_scalers.begin()->second->syncWindowToCursor(pos);
-    return blockEvent;
+    auto *scaler =  m_scalers.begin()->second.get();
+
+    scaler->constrainCursor(pos);
+    scaler->syncWindowToCursor(pos);
+    return shouldBlockInput(pos);
 }
 
 bool ScaleToScreen::pointerMotion(PointerMotionEvent *event)
