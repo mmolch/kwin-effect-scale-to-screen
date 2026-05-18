@@ -15,7 +15,12 @@ cmake --build build
 ```
 
 ### Installation
-If the plugin built correctly you'll have a `ScaleToScreen.so` inside the `build/` directory. It depends on your Linux distribution where to put it. It needs to go into the qt6 plugins directory under `kwin/effects/plugins/`
+#### With cmake
+```bash
+cmake --install build
+```
+#### Manual installation
+If the plugin built correctly you'll have a `scaletoscreen.so` inside the `build/` directory. It depends on your Linux distribution where to put it. It needs to go into the qt6 plugins directory under `kwin/effects/plugins/`
 You might have to create the additional `plugins` directory under `effects`.
 - Ubuntu 26.04: `/usr/lib/x86_64-linux-gnu/qt6/plugins/kwin/effects/plugins/`
 
