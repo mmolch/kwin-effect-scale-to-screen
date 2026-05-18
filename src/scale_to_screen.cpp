@@ -22,7 +22,7 @@ ScaleToScreen::ScaleToScreen()
     qCDebug(lcScaleToScreen) << "ScaleToScreen()";
 
     QAction *a = new QAction(this);
-    a->setObjectName(QStringLiteral("scaleToScreen"));
+    a->setObjectName(QStringLiteral("Scale to Screen"));
     a->setText(i18n("Scale the active window to fullscreen"));
     KGlobalAccel::self()->setShortcut(a, {Qt::ALT | Qt::SHIFT | Qt::Key_A});
 

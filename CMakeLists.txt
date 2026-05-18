@@ -38,14 +38,14 @@ configure_file(
     @ONLY
 )
 
-add_library(ScaleToScreen MODULE
+add_library(scaletoscreen MODULE
     src/main.cpp
     src/scale_to_screen.h src/scale_to_screen.cpp
     src/scaler.h src/scaler.cpp
     src/util.h src/util.cpp
 )
 
-target_link_libraries(ScaleToScreen PRIVATE
+target_link_libraries(scaletoscreen PRIVATE
     KWin::kwin
 
     KF6::GlobalAccel
@@ -58,7 +58,7 @@ set(QT6_PLUGIN_DIR "${CMAKE_INSTALL_LIBDIR}/qt6/plugins")
 # KWin effects live inside the Qt6 plugin tree
 set(KWIN_EFFECTS_DIR "${QT6_PLUGIN_DIR}/kwin/effects/plugins")
 
-install(TARGETS ScaleToScreen
+install(TARGETS scaletoscreen
     LIBRARY DESTINATION ${KWIN_EFFECTS_DIR}
 )
 
