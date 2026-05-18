@@ -1,8 +1,8 @@
 # Scale to Screen – A KWin effect to scale windows (e.g. games) to fullscreen 
-**Scale to Screen** is a custom **KWin 6 effect** (written against KDE 6.6) that scales the active window to fullscreen. It's basically a **poor-man's gamescope** implemented as a KWin Effect. This is simply the first little project that came to mind when I decided to learn about the KWin internals and while it certainly might have its bugs and limits (read how it works and the bugs and issues below), it's actually working rather well at least for my purposes. If you need a quick-and-easy window up/down-scaler or if you're in the same situation as me and have older CPUs/GPUs with no or incomplete Vulkan support, just give it a try. Gamescope doesn't run on these at all. My reference platform here is my trusty old 14 years old Celeron N2840 7.5 Watts CPU, which can actually run Crysis fine through wine's D3D to OpenGL layer (it's absolutely playable at 800x500 with lowest settings :-)).
+**Scale to Screen** is a **KWin 6 effect** (written against KDE 6.6) that scales the active window to fullscreen. It's probaby most comparable to **magpie** on Winwodws or some kind of **poor-man's gamescope**. This is simply the first little project that came to mind when I decided to learn about the KWin internals and while it certainly might have its bugs and limits (read how it works and the bugs and issues below), it's actually working rather well at least for my purposes. If you need a quick-and-easy window up/down-scaler or if you're in the same situation as me and have older CPUs/GPUs with no or incomplete Vulkan support, just give it a try. Gamescope doesn't run on these at all. My reference platform here is my trusty old 14 years old Celeron N2840 7.5 Watts CPU, which can actually run Crysis through wine's D3D to OpenGL layer (it's playable at 800x500 with lowest settings :-)).
 
 ## Disclaimer
-Please be aware that this plugin **might cause crashes**. As I wrote in the introduction, I'm completely new to the KWin-codebase and have to rely pretty much only on the headers to figure stuff out. Documentation is sparse and even if there *is* some documentation it's usually vastly outdated. You have been warned.
+Please be aware that this plugin **might cause crashes**. As I wrote in the introduction, I'm completely new to the KWin-codebase and have to rely pretty much only on the headers to figure stuff out. Documentation is sparse and even if there *is* some documentation it's usually vastly outdated. You have been warned. That being said, I've been using it for quite some time without any issues.
 
 ## Build & Install
 ### Build requirements
@@ -29,18 +29,18 @@ to toggle the effect (The key combination can be changed in the system settings 
 
 ## How it works
  - I didn't find a way to redirect input in a KWin plugin and worked around it by implementing a "Moving Window"-scaler. I move the actual window behind the upscaled image that's rendered to the screen, so that the mouse cursor overlaps with the physical pixels of the window.
- - The window itself is rendered through renderItem() using the scene's renderer directly to te screen, avoiding additional overhead.
+ - The window itself is rendered directly to the viewport vie renderItem() using the scene's renderer, avoiding any additional overhead.
 
 ## Bugs and issues
  - The "Moving Window"-technique can be quirky at times while sometimes it doesn't work at all depending on the application or game. Your milage my vary.
+ - The mouse remains constrained when invoking other effects like the workspace grid while the window is scaled.
 
 ## Contributing
 While this is a typical "it works for me"-project, I welcome all contributions, whether it's issue-reporting or patches.
 Ideas for contributions (not sorted in any way):
- - Allow one upscaled window per physical display
+ - Allow one scaled window per physical display
  - Configure things like aspect ratio or margins in the system settings
  - Window-specific profiles
- - Allow having multiple windows to be marked for scaling when they get the focus
  - …to be continued
 
 ## License
