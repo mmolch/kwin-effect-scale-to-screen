@@ -24,7 +24,7 @@ ScaleToScreen::ScaleToScreen()
     QAction *a = new QAction(this);
     a->setObjectName(QStringLiteral("scaleToScreen"));
     a->setText(i18n("Scale the active window to fullscreen"));
-    KGlobalAccel::self()->setShortcut(a, {Qt::CTRL | Qt::ALT | Qt::SHIFT | Qt::Key_A});
+    KGlobalAccel::self()->setShortcut(a, {Qt::ALT | Qt::SHIFT | Qt::Key_A});
 
     connect(a, &QAction::triggered, this, &ScaleToScreen::toggleActiveWindow);
     connect(effects, &EffectsHandler::windowAdded, this, &ScaleToScreen::onWindowAdded);
