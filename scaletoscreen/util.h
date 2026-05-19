@@ -1,5 +1,6 @@
 #pragma once
 
+#include "globals.h"
 #include <QObject>
 #include <memory>
 
@@ -13,5 +14,7 @@ struct QObjectDeleter {
 
 template <typename T>
 using unique_qptr = std::unique_ptr<T, QObjectDeleter>;
+
+bool matchStringWithMode(const QString &text, const QString &pattern, MatchMode mode);
 
 } // namespace scaleToScreen

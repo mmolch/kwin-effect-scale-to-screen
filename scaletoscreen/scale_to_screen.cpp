@@ -14,6 +14,7 @@ Q_LOGGING_CATEGORY(lcScaleToScreen, "scaleToScreen")
 ScaleToScreen::ScaleToScreen()
     : Effect()
     , InputEventFilter(InputFilterOrder::Effects)
+    , m_config{"scaletoscreenrc"}
 {
     #ifdef NDEBUG
         QLoggingCategory::setFilterRules(QStringLiteral("scaleToScreen.debug=false\n"));
@@ -36,6 +37,46 @@ ScaleToScreen::~ScaleToScreen()
 {
     qCDebug(lcScaleToScreen) << "~ScaleToScreen()";
 
+}
+
+AppSettings ScaleToScreen::getAppSettings(EffectWindow *w) const
+{
+    if (!w) {
+        return AppSettings{QStringLiteral("Default"), false};
+    }
+
+    const QString windowClass = w->windowClass();
+    const QString windowTitle = w->caption();
+
+    KConfigGroup appsGroup(&m_config, QStringLiteral("Applications"));
+
+    for (const QString &name : appsGroup.groupList()) {
+        KConfigGroup g = appsGroup.group(name);
+
+        const MatchMode wcmm = static_cast<MatchMode>(g.readEntry("WindowClassMatchMode", static_cast<int>(MatchMode::Ignore)));
+        const QString classPattern = g.readEntry("WindowClass", QString());
+
+        // Check Window Class
+        if (!matchStringWithMode(windowClass, classPattern, wcmm)) {
+            continue;
+        }
+
+        const MatchMode wtmm = static_cast<MatchMode>(g.readEntry("WindowTitleMatchMode", static_cast<int>(MatchMode::Ignore)));
+        const QString titlePattern = g.readEntry("WindowTitle", QString());
+
+        // Check Window Title
+        if (!matchStringWithMode(windowTitle, titlePattern, wtmm)) {
+            continue;
+        }
+
+        // If both matched (or were ignored), return the settings
+        const QString profile = g.readEntry("ScalerProfile", QStringLiteral("Default"));
+        const bool autoScale = g.readEntry("AutoScale", false);
+
+        return AppSettings{profile, autoScale};
+    }
+
+    return AppSettings{QStringLiteral("Default"), false};
 }
 
 void ScaleToScreen::toggleActiveWindow()
@@ -206,6 +247,11 @@ void ScaleToScreen::onWindowAdded(EffectWindow *w)
     }
 
     qCDebug(lcScaleToScreen) << "onWindowAdded()" << w;
+
+    auto appSettings = getAppSettings(w);
+    if (appSettings.autoScale) {
+        addScaler(w);
+    }
 }
 
 void ScaleToScreen::onWindowDeleted(EffectWindow *w)

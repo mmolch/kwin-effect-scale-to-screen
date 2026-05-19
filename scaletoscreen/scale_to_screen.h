@@ -1,8 +1,10 @@
 #pragma once
 
+#include "globals.h"
 #include "scaler.h"
 #include "effect/effect.h"
 #include "input.h"
+#include <KConfig>
 #include <QLoggingCategory>
 
 using namespace KWin;
@@ -18,10 +20,11 @@ public:
     explicit ScaleToScreen();
     ~ScaleToScreen() override;
 
+    AppSettings getAppSettings(EffectWindow *w) const;
+
     void toggleActiveWindow();
     void addScaler(EffectWindow *w);
     ScalerPtr removeScaler(EffectWindow *w);
-
     Scaler *findScaler(EffectWindow *w) const;
 
     void clearScreen();
@@ -46,6 +49,7 @@ private slots:
 private:
     std::unordered_map<EffectWindow*, ScalerPtr> m_suspendedScalers;
     std::unordered_map<EffectWindow*, ScalerPtr> m_scalers;
+    KConfig m_config;
 
     friend class Scaler;
 };

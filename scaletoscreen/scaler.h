@@ -1,5 +1,6 @@
 #pragma once
 
+#include "globals.h"
 #include "util.h"
 #include "effect/effect.h"
 #include "window.h"
@@ -21,12 +22,6 @@ namespace scaleToScreen {
 Q_DECLARE_LOGGING_CATEGORY(lcScaleToScreen)
 
 class ScaleToScreen;
-
-struct ScalerSettings {
-    //IgnoreAspectRatio, KeepAspectRatio, KeepAspectRatioByExpanding
-    Qt::AspectRatioMode aspectRatio{Qt::KeepAspectRatio};
-    QMargins margins{};
-};
 
 class Scaler : public QObject
 {

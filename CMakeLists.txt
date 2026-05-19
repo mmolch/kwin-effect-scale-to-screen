@@ -32,35 +32,13 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 find_package(KF6 6.0 REQUIRED COMPONENTS Config GlobalAccel I18n CoreAddons)
 find_package(KWin 6.0 REQUIRED NO_MODULE)
 
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/metadata.json.in
-    ${CMAKE_CURRENT_BINARY_DIR}/metadata.json
-    @ONLY
-)
-
-add_library(scaletoscreen MODULE
-    src/main.cpp
-    src/scale_to_screen.h src/scale_to_screen.cpp
-    src/scaler.h src/scaler.cpp
-    src/util.h src/util.cpp
-)
-
-target_link_libraries(scaletoscreen PRIVATE
-    KWin::kwin
-
-    KF6::GlobalAccel
-    KF6::I18n
-)
-
 # Debian/Ubuntu multiarch Qt6 plugin path override
 set(QT6_PLUGIN_DIR "${CMAKE_INSTALL_LIBDIR}/qt6/plugins")
 
 # KWin effects live inside the Qt6 plugin tree
 set(KWIN_EFFECTS_DIR "${QT6_PLUGIN_DIR}/kwin/effects/plugins")
 
-install(TARGETS scaletoscreen
-    LIBRARY DESTINATION ${KWIN_EFFECTS_DIR}
-)
+add_subdirectory(scaletoscreen)
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
