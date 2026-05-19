@@ -21,9 +21,10 @@ public:
     ~ScaleToScreen() override;
 
     AppSettings getAppSettings(EffectWindow *w) const;
+    ScalerSettings getScalerSettings(const QString &profile) const;
 
     void toggleActiveWindow();
-    void addScaler(EffectWindow *w);
+    void addScaler(EffectWindow *w, std::optional<ScalerSettings> settings = std::nullopt);
     ScalerPtr removeScaler(EffectWindow *w);
     Scaler *findScaler(EffectWindow *w) const;
 
@@ -32,6 +33,7 @@ public:
     // Effect Interface
     void prePaintScreen(ScreenPrePaintData &data, std::chrono::milliseconds presentTime) override;
     void paintWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const Region &region, WindowPaintData &data) override;
+    void reconfigure(ReconfigureFlags flags) override;
 
     bool shouldBlockInput(QPointF cursorPosition) const;
     bool handlePointer(const QPointF &pos);

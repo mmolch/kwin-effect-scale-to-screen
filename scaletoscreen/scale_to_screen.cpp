@@ -5,6 +5,7 @@
 #include <KGlobalAccel>
 #include <KLocalizedString>
 #include <QAction>
+#include <QFileInfo>
 #include "opengl/glutils.h"
 
 namespace scaleToScreen {
@@ -53,30 +54,52 @@ AppSettings ScaleToScreen::getAppSettings(EffectWindow *w) const
     for (const QString &name : appsGroup.groupList()) {
         KConfigGroup g = appsGroup.group(name);
 
-        const MatchMode wcmm = static_cast<MatchMode>(g.readEntry("WindowClassMatchMode", static_cast<int>(MatchMode::Ignore)));
+        const MatchMode wcmm = static_cast<MatchMode>(std::clamp(g.readEntry("WindowClassMatchMode", static_cast<int>(MatchMode::Ignore)), 0, 3));
+        const MatchMode wtmm = static_cast<MatchMode>(std::clamp(g.readEntry("WindowTitleMatchMode", static_cast<int>(MatchMode::Ignore)), 0, 3));
+
+        if ((wcmm == MatchMode::Ignore) && (wtmm == MatchMode::Ignore)) {
+            continue;
+        }
+
         const QString classPattern = g.readEntry("WindowClass", QString());
 
-        // Check Window Class
         if (!matchStringWithMode(windowClass, classPattern, wcmm)) {
             continue;
         }
 
-        const MatchMode wtmm = static_cast<MatchMode>(g.readEntry("WindowTitleMatchMode", static_cast<int>(MatchMode::Ignore)));
         const QString titlePattern = g.readEntry("WindowTitle", QString());
 
-        // Check Window Title
         if (!matchStringWithMode(windowTitle, titlePattern, wtmm)) {
             continue;
         }
 
         // If both matched (or were ignored), return the settings
-        const QString profile = g.readEntry("ScalerProfile", QStringLiteral("Default"));
+        const QString profile = g.readEntry("Profile", QStringLiteral("Default"));
         const bool autoScale = g.readEntry("AutoScale", false);
 
         return AppSettings{profile, autoScale};
     }
 
     return AppSettings{QStringLiteral("Default"), false};
+}
+
+ScalerSettings ScaleToScreen::getScalerSettings(const QString &profile) const
+{
+    ScalerSettings settings{};
+
+    KConfigGroup profilesGroup(&m_config, QStringLiteral("Profiles"));
+    KConfigGroup g = profilesGroup.group(profile);
+    if (g.exists()) {
+        settings.aspectRatio = static_cast<Qt::AspectRatioMode>(std::clamp(g.readEntry("AspectRatioMode", static_cast<int>(Qt::AspectRatioMode::KeepAspectRatio)), 0, 1));
+        settings.margins = {
+            qMax(0, g.readEntry("MarginLeft", 0)),
+            qMax(0, g.readEntry("MarginTop", 0)),
+            qMax(0, g.readEntry("MarginRight", 0)),
+            qMax(0, g.readEntry("MarginBottom", 0)),
+        };
+    }
+
+    return settings;
 }
 
 void ScaleToScreen::toggleActiveWindow()
@@ -103,7 +126,7 @@ void ScaleToScreen::toggleActiveWindow()
     }
 }
 
-void ScaleToScreen::addScaler(EffectWindow *w)
+void ScaleToScreen::addScaler(EffectWindow *w, std::optional<ScalerSettings> settings)
 {
     qCDebug(lcScaleToScreen) << "addScaler()" << w;
 
@@ -111,7 +134,11 @@ void ScaleToScreen::addScaler(EffectWindow *w)
         return;
     }
 
-    auto insertResult = m_suspendedScalers.insert({w, ScalerPtr{new Scaler(*this, *w, ScalerSettings())}});
+    if (!settings) {
+        settings = getScalerSettings("Default");
+    }
+
+    auto insertResult = m_suspendedScalers.insert({w, ScalerPtr{new Scaler(*this, *w, *settings)}});
     Scaler *scaler = insertResult.first->second.get();
     connect(scaler, &Scaler::isScalingChanged, [this, w](bool isScaling) {
         if (isScaling) {
@@ -202,6 +229,15 @@ void ScaleToScreen::paintWindow(const RenderTarget &renderTarget, const RenderVi
     }
 }
 
+void ScaleToScreen::reconfigure(ReconfigureFlags flags)
+{
+    Q_UNUSED(flags)
+    qCDebug(lcScaleToScreen) << "reconfigure()";
+    QFileInfo(m_config.name()).refresh();
+    m_config.markAsClean();
+    m_config.reparseConfiguration();
+}
+
 bool ScaleToScreen::shouldBlockInput(QPointF pos) const
 {
     // I'm currently only allowing one active scaler in the first place
@@ -247,6 +283,10 @@ void ScaleToScreen::onWindowAdded(EffectWindow *w)
     }
 
     qCDebug(lcScaleToScreen) << "onWindowAdded()" << w;
+
+    if (!w->window()->isNormalWindow()) {
+        return;
+    }
 
     auto appSettings = getAppSettings(w);
     if (appSettings.autoScale) {
