@@ -91,11 +91,11 @@ ScalerSettings ScaleToScreen::getScalerSettings(const QString &profile) const
     KConfigGroup g = profilesGroup.group(profile);
     if (g.exists()) {
         settings.aspectRatio = static_cast<Qt::AspectRatioMode>(std::clamp(g.readEntry("AspectRatioMode", static_cast<int>(Qt::AspectRatioMode::KeepAspectRatio)), 0, 1));
-        settings.margins = {
-            qMax(0, g.readEntry("MarginLeft", 0)),
-            qMax(0, g.readEntry("MarginTop", 0)),
-            qMax(0, g.readEntry("MarginRight", 0)),
-            qMax(0, g.readEntry("MarginBottom", 0)),
+        settings.cropMargins = {
+            g.readEntry("MarginLeft", 0),
+            g.readEntry("MarginTop", 0),
+            g.readEntry("MarginRight", 0),
+            g.readEntry("MarginBottom", 0),
         };
     }
 

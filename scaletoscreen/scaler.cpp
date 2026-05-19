@@ -154,14 +154,14 @@ void Scaler::updateTargetRect()
 {
     const QRectF screenGeometry = effects->clientArea(FullScreenArea, &m_window);
     const QRectF windowGeometry = m_window.frameGeometry();
-    m_state.targetRect = calculateTargetRect(screenGeometry, windowGeometry, m_settings.margins, m_settings.aspectRatio);
+    m_state.targetRect = calculateTargetRect(screenGeometry, windowGeometry, m_settings.cropMargins, m_settings.aspectRatio);
     qCDebug(lcScaleToScreen) << "new targetRect" << m_state.targetRect;
 }
 
 void Scaler::updatePaintData()
 {
     const QRectF winGeo = m_window.frameGeometry();
-    const QMarginsF margins = m_settings.margins;
+    const QMarginsF margins = m_settings.cropMargins;
 
     const QRectF visualRect = winGeo.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
     const QRectF targetGeo = m_state.targetRect;
@@ -180,7 +180,7 @@ void Scaler::updatePaintData()
 QPointF Scaler::mapWindowToCursor(QPointF cursorPosition) const
 {
     const QRectF target = m_state.targetRect;
-    const QMarginsF margins = m_settings.margins;
+    const QMarginsF margins = m_settings.cropMargins;
 
     // Calculate window's visual (cropped) dimensions
     qreal visualWidth = m_window.width() - margins.left() - margins.right();

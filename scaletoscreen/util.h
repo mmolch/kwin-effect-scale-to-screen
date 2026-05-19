@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globals.h"
+#include <QMargins>
 #include <QObject>
 #include <memory>
 
