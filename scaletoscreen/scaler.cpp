@@ -234,8 +234,10 @@ void Scaler::renderScaledWindowItem(const RenderTarget &target, const RenderView
     auto renderer = static_cast<KWin::ItemRendererOpenGL *>(KWin::Compositor::self()->scene()->renderer());
     Item *item = m_window.window()->windowItem()->windowContainer();
 
+    RenderViewport adjustedViewport{viewport.renderRect(), viewport.scale(), target, {}};
+
     renderer->renderItem(target,
-                         viewport,
+                         adjustedViewport,
                          item,
                          0, // mask
                          region, // The area to paint

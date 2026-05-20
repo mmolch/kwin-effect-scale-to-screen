@@ -20,7 +20,7 @@ cmake --build build
 cmake --install build
 ```
 #### Manual installation
-If the plugin built correctly you'll have a `scaletoscreen.so` inside the `build/` directory. It depends on your Linux distribution where to put it. It needs to go into the qt6 plugins directory under `kwin/effects/plugins/`
+If the plugin built correctly you'll have a `scaletoscreen.so` inside the `build/scaletoscreen` directory. It depends on your Linux distribution where to put it. It needs to go into the qt6 plugins directory under `kwin/effects/plugins/`
 You might have to create the additional `plugins` directory under `effects`.
 - Ubuntu 26.04: `/usr/lib/x86_64-linux-gnu/qt6/plugins/kwin/effects/plugins/`
 
@@ -32,6 +32,27 @@ Once installed, you'll find the plugin in `System Settings -> Desktop Effects ->
 After enabling the plugin, you can press **`Alt + Shift + A`** \
 to toggle the effect (The key combination can be changed in the system settings under `Window Management -> Scale the active window to fullscreen`). Once the focus changes to another window the effect ends and the window goes back to the previous state. It remembers the window though and will go back into scale-mode when you activate the window again.
 
+## Configuration
+At the moment you can configure applications / windows to automatically scale when they start and their aspect ratio mode. There is no GUI and you have to edit the config by hand. To create the config, create the file `~/.config/scaletoscreenrc` with the following contents:
+```
+[Profiles][Default]
+AspectRatioMode=1 # 1: Keep aspect ratio
+
+[Profiles][IgnoreAspect]
+AspectRatioMode=0 # 0: Ignore aspect ratio
+
+[Applications][kcalc]
+WindowClassMatchMode=1 # 0: Ignore, 1: Exact, 2: Substring, 3: Regex
+WindowClass=kcalc org.kde.kcalc
+WindowTitleMatchMode=0
+WindowTitle=
+Profile=Default
+AutoScale=true
+```
+To reload the config, use
+```bash
+qdbus6 org.kde.KWin /Effects reconfigureEffect scaletoscreen
+```
 ## How it works
  - I didn't find a way to redirect input in a KWin plugin and worked around it by implementing a "Moving Window"-scaler. I move the actual window behind the upscaled image that's rendered to the screen, so that the mouse cursor overlaps with the physical pixels of the window.
  - The window itself is rendered directly to the viewport vie renderItem() using the scene's renderer, avoiding any additional overhead.
