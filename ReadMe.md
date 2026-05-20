@@ -54,21 +54,15 @@ To reload the config, use
 qdbus6 org.kde.KWin /Effects reconfigureEffect scaletoscreen
 ```
 ## How it works
- - I didn't find a way to redirect input in a KWin plugin and worked around it by implementing a "Moving Window"-scaler. I move the actual window behind the upscaled image that's rendered to the screen, so that the mouse cursor overlaps with the physical pixels of the window.
+ - There is no way to redirect (mouse) input to a certain window. Only the window below the mouse receives mouse events even if another window has the focus. KWin's zoom effect also doesn't touch the mouse at all for example and instead draws a fake cursor.The real cursor never leaves the actual window, resulting in the mouse becoming extremely sensitive at high zoom levels. This is unacceptable for my purpose. Another issue with the zoom's implementation is that the window can't be (partially) outside the screen or even bigger than the screen for downscaling higher resolutions. That's why I decided to work around KWin's input limitations by implementing a "Moving Window"-scaler. I move the actual window behind the upscaled image that's rendered to the screen, so that the mouse cursor overlaps with the physical pixels of the window.
  - The window itself is rendered directly to the viewport vie renderItem() using the scene's renderer, avoiding any additional overhead.
 
 ## Bugs and issues
- - The "Moving Window"-technique can be quirky at times while sometimes it doesn't work at all depending on the application or game. Your milage my vary.
+ - The "Moving Window"-technique can be quirky at times depending on the application or game. Your milage my vary. I haven't found any issues with mygames though.
  - The mouse remains constrained when invoking other effects like the workspace grid while the window is scaled.
 
 ## Contributing
 While this is a typical "it works for me"-project, I welcome all contributions, whether it's issue-reporting or patches.
-Ideas for contributions (not sorted in any way):
- - Allow one scaled window per physical display
- - Configure things like aspect ratio or margins in the system settings
- - Window-specific profiles
- - …to be continued
 
 ## License
-
 GPL
