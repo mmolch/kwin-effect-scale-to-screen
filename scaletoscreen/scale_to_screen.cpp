@@ -120,7 +120,9 @@ void ScaleToScreen::toggleActiveWindow()
 
         if (allowedWindowTypes) {
             if (!active->window()->isFullScreen()) {
-                addScaler(active);
+                const auto appSettings = getAppSettings(active);
+                const auto scalerSettings = getScalerSettings(appSettings.profile);
+                addScaler(active, scalerSettings);
             }
         }
     }
@@ -290,7 +292,8 @@ void ScaleToScreen::onWindowAdded(EffectWindow *w)
 
     auto appSettings = getAppSettings(w);
     if (appSettings.autoScale) {
-        addScaler(w);
+        const auto scalerSettings = getScalerSettings(appSettings.profile);
+        addScaler(w, scalerSettings);
     }
 }
 
