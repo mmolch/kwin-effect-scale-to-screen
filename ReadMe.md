@@ -65,7 +65,7 @@ The following attempts didn't work or produced some issues:
  - QML Effects
    - QML Effects only provide window thumbnails and upscaling scaled down windows is plain horrible.
    - The *real* dealbraker. It's impossible to redirect input. QML basically creates a fullscreen window that captures all input.
- - paintWindow()/drawWindow() make issues when the display's scale is set to a different value than 1. You get some "jitter" or on-pixel-off errors if values round badly. It's a little hard to describe but depending on the window's position the window is sometimes larger or smaller or shifted left/right or up/down. The problem is that KWin maps the logical geometry to physical pixels. This is even present when rendering into a texture.
+ - paintWindow()/drawWindow() make issues when the display's scale is set to a different value than 1. You get some "jitter" or on-pixel-off errors if values round badly. It's a little hard to describe but depending on the window's position the window is sometimes larger or smaller or shifted left/right or up/down. The problem is that KWin maps the logical geometry to physical pixels. This is even present when rendering into a texture. Since I permanently move the window behind the scene to follow the cursor I discared this. You can find my offscreen rendering attempt with a basic shader in the git history if you don't care about this issue.
 
 ## Bugs and issues
  - The "Moving Window"-technique can be quirky at times depending on the application or game. Your milage my vary. I haven't found any issues with mygames though.
