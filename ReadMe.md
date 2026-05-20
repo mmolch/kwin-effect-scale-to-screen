@@ -57,8 +57,15 @@ To reload the config, use
 qdbus6 org.kde.KWin /Effects reconfigureEffect scaletoscreen
 ```
 ## How it works
+I hope this is useful to people who want to fork or play around with the code or implement their own window scalers.
  - There is no way to redirect (mouse) input to a certain window. Only the window below the mouse receives mouse events even if another window has the focus. KWin's zoom effect also doesn't touch the mouse at all for example and instead draws a fake cursor.The real cursor never leaves the actual window, resulting in the mouse becoming extremely sensitive at high zoom levels. This is unacceptable for my purpose. Another issue with the zoom's implementation is that the window can't be (partially) outside the screen or even bigger than the screen for downscaling higher resolutions. That's why I decided to work around KWin's input limitations by implementing a "Moving Window"-scaler. I move the actual window behind the upscaled image that's rendered to the screen, so that the mouse cursor overlaps with the physical pixels of the window.
  - The window itself is rendered directly to the viewport vie renderItem() using the scene's renderer, avoiding any additional overhead.
+
+The following attempts didn't work or produced some issues:
+ - QML Effects
+   - QML Effects only provide window thumbnails and upscaling scaled down windows is plain horrible.
+   - The *real* dealbraker. It's impossible to redirect input. QML basically creates a fullscreen window that captures all input.
+ - paintWindow()/drawWindow() make issues when the display's scale is set to a different value than 1. You get some "jitter" or on-pixel-off errors if values round badly. It's a little hard to describe but depending on the window's position the window is sometimes larger or smaller or shifted left/right or up/down. The problem is that KWin maps the logical geometry to physical pixels. This is even present when rendering into a texture.
 
 ## Bugs and issues
  - The "Moving Window"-technique can be quirky at times depending on the application or game. Your milage my vary. I haven't found any issues with mygames though.
