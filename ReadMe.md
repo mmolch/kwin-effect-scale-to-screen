@@ -36,13 +36,16 @@ to toggle the effect (The key combination can be changed in the system settings 
 At the moment you can configure applications / windows to automatically scale when they start and their aspect ratio mode. There is no GUI and you have to edit the config by hand. To create the config, create the file `~/.config/scaletoscreenrc` with the following contents:
 ```
 [Profiles][Default]
-AspectRatioMode=1 # 1: Keep aspect ratio
+# 1: Keep aspect ratio
+AspectRatioMode=1
 
 [Profiles][IgnoreAspect]
-AspectRatioMode=0 # 0: Ignore aspect ratio
+# 0: Ignore aspect ratio
+AspectRatioMode=0
 
 [Applications][kcalc]
-WindowClassMatchMode=1 # 0: Ignore, 1: Exact, 2: Substring, 3: Regex
+# 0: Ignore, 1: Exact, 2: Substring, 3: Regex
+WindowClassMatchMode=1
 WindowClass=kcalc org.kde.kcalc
 WindowTitleMatchMode=0
 WindowTitle=
